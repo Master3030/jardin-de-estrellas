@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a0a3e">
+<title>🌟 Jardín de Estrellas</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap');
+:root{--star:#FFD700;--magic:#c084fc;--glow:#818cf8;--danger:#f87171;--success:#4ade80;--bg:#0f0728}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);font-family:'Nunito',sans-serif;overflow:hidden;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;touch-action:none}
+#gameWrapper{position:relative;width:100%;height:100%;max-width:480px;margin:0 auto}
+canvas{display:block;width:100%;height:100%;touch-action:none;cursor:none}
+
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;padding:20px;text-align:center;transition:opacity .4s ease}
+.screen.hidden{opacity:0;pointer-events:none}
+
+#startScreen{background:linear-gradient(160deg,#0f0728 0%,#1e0954 40%,#2d1b69 70%,#0f0728 100%)}
+.star-field{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.star-dot{position:absolute;border-radius:50%;background:white;animation:twinkle var(--d,3s) ease-in-out infinite;animation-delay:var(--delay,0s)}
+@keyframes twinkle{0%,100%{opacity:.1;transform:scale(1)}50%{opacity:1;transform:scale(1.4)}}
+
+.logo-container{position:relative;margin-bottom:8px}
+.logo-glow{position:absolute;inset:-20px;background:radial-gradient(ellipse,rgba(192,132,252,.3) 0%,transparent 70%);animation:pulse-glow 2s ease-in-out infinite}
+@keyframes pulse-glow{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.1)}}
+.game-title{font-family:'Fredoka One',cursive;font-size:clamp(2.2rem,9vw,3.5rem);background:linear-gradient(135deg,#fbbf24,#f472b6,#818cf8,#4ade80);background-size:300% 300%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:rainbow-shift 4s ease infinite;line-height:1.1;filter:drop-shadow(0 0 20px rgba(192,132,252,.6))}
+@keyframes rainbow-shift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.game-subtitle{font-family:'Fredoka One',cursive;color:#c084fc;font-size:clamp(.9rem,3.5vw,1.2rem);margin-top:4px;letter-spacing:2px;text-transform:uppercase}
+
+.age-selector{display:flex;gap:7px;margin-bottom:10px;flex-wrap:wrap;justify-content:center}
+.age-btn{padding:7px 14px;border-radius:50px;border:2px solid rgba(255,255,255,.2);background:transparent;color:#9ca3af;font-family:'Nunito',sans-serif;font-weight:700;font-size:.8rem;cursor:pointer;transition:all .2s}
+.age-btn.active{background:rgba(250,204,21,.2);border-color:#facc15;color:#facc15}
+
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:340px;margin:10px 0}
+.mode-btn{background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.15);border-radius:16px;padding:13px 8px;cursor:pointer;transition:all .2s ease;color:white;font-family:'Nunito',sans-serif;font-weight:900}
+.mode-btn:hover,.mode-btn.selected{background:rgba(192,132,252,.25);border-color:#c084fc;transform:scale(1.04);box-shadow:0 0 20px rgba(192,132,252,.4)}
+.mode-btn .mode-icon{font-size:1.8rem;display:block;margin-bottom:4px}
+.mode-btn .mode-name{font-size:.85rem;color:#e2d9f3;display:block}
+.mode-btn .mode-desc{font-size:.68rem;color:#9ca3af;margin-top:2px;display:block}
+
+.play-btn{background:linear-gradient(135deg,#7c3aed,#a855f7,#6d28d9);border:none;border-radius:50px;padding:16px 44px;font-family:'Fredoka One',cursive;font-size:clamp(1.3rem,5vw,1.8rem);color:white;cursor:pointer;box-shadow:0 8px 30px rgba(124,58,237,.6),0 0 60px rgba(168,85,247,.3);transition:all .2s;letter-spacing:1px;animation:btn-float 2s ease-in-out infinite;position:relative;overflow:hidden}
+.play-btn::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);transform:translateX(-100%);animation:shimmer 2s infinite}
+@keyframes shimmer{to{transform:translateX(100%)}}
+@keyframes btn-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.play-btn:active{transform:scale(.95)!important}
+.highscore-display{color:#facc15;font-size:.8rem;margin-top:10px;font-weight:700}
+
+/* LEVEL BANNER */
+#levelBanner{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:20;pointer-events:none;opacity:0}
+#levelBanner.show{animation:banner-show 2.8s ease forwards}
+@keyframes banner-show{0%{opacity:0;transform:scale(.5)}15%{opacity:1;transform:scale(1.06)}25%{transform:scale(1)}80%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.92)}}
+.banner-inner{background:linear-gradient(135deg,rgba(124,58,237,.97),rgba(168,85,247,.97));border:3px solid #c084fc;border-radius:24px;padding:24px 44px;text-align:center;box-shadow:0 0 60px rgba(168,85,247,.8),inset 0 0 30px rgba(255,255,255,.1)}
+.banner-level{font-family:'Fredoka One',cursive;font-size:clamp(1.8rem,7vw,2.8rem);color:#facc15;text-shadow:0 0 20px rgba(250,204,21,.8)}
+.banner-name{font-family:'Fredoka One',cursive;font-size:clamp(1.1rem,4.5vw,1.7rem);color:white;margin-top:3px}
+.banner-heart{font-size:1.5rem;margin-top:6px;animation:heart-pop .4s ease}
+@keyframes heart-pop{0%{transform:scale(0)}60%{transform:scale(1.4)}100%{transform:scale(1)}}
+.banner-emojis{font-size:1.8rem;margin-top:4px;letter-spacing:5px}
+
+/* PAUSE / GAME OVER */
+#pauseScreen,#gameOverScreen{background:rgba(15,7,40,.94);backdrop-filter:blur(12px)}
+.go-title{font-family:'Fredoka One',cursive;font-size:clamp(1.8rem,7vw,2.8rem);color:#f87171;margin-bottom:4px;text-shadow:0 0 30px rgba(248,113,113,.6)}
+.go-score{font-family:'Fredoka One',cursive;font-size:clamp(1.2rem,5vw,1.9rem);color:#facc15;margin:8px 0}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:300px;margin:14px 0}
+.stat-box{background:rgba(255,255,255,.07);border-radius:14px;padding:13px 10px;border:1px solid rgba(255,255,255,.12)}
+.stat-box .stat-val{font-family:'Fredoka One',cursive;font-size:1.5rem;color:#c084fc;display:block}
+.stat-box .stat-lbl{font-size:.68rem;color:#9ca3af;margin-top:2px;display:block}
+.btn-row{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;justify-content:center}
+.ui-btn{padding:13px 26px;border-radius:50px;border:none;font-family:'Fredoka One',cursive;font-size:clamp(1rem,4vw,1.2rem);cursor:pointer;transition:all .2s;letter-spacing:.5px}
+.ui-btn:active{transform:scale(.93)}
+.btn-primary{background:linear-gradient(135deg,#7c3aed,#a855f7);color:white;box-shadow:0 4px 20px rgba(124,58,237,.5)}
+.btn-secondary{background:rgba(255,255,255,.1);color:#d1d5db;border:1px solid rgba(255,255,255,.15)}
+.new-record{font-family:'Fredoka One',cursive;color:#facc15;font-size:1.05rem;animation:record-bounce .5s ease infinite alternate}
+@keyframes record-bounce{from{transform:scale(1)}to{transform:scale(1.05)}}
+.go-hearts{font-size:1.5rem;letter-spacing:4px;margin:4px 0}
+
+/* PAUSE BTN — esquina inferior izquierda */
+#pauseBtn{position:absolute;bottom:16px;left:16px;z-index:15;
+  background:rgba(124,58,237,.55);
+  border:2px solid rgba(192,132,252,.5);
+  border-radius:50%;width:46px;height:46px;
+  display:none;align-items:center;justify-content:center;
+  font-size:1.2rem;cursor:pointer;color:white;
+  backdrop-filter:blur(8px);
+  box-shadow:0 4px 16px rgba(124,58,237,.4);
+  transition:all .2s}
+#pauseBtn:active{transform:scale(.88);background:rgba(124,58,237,.8)}
+
+/* POWERUP HUD */
+#powerupHUD{position:absolute;bottom:72px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:8;pointer-events:none}
+.powerup-indicator{background:rgba(0,0,0,.5);border:2px solid rgba(255,255,255,.3);border-radius:12px;padding:5px 11px;font-size:.72rem;color:white;font-weight:700;display:flex;align-items:center;gap:4px;animation:powerup-pulse 1s ease-in-out infinite;backdrop-filter:blur(4px)}
+@keyframes powerup-pulse{0%,100%{box-shadow:0 0 8px rgba(255,255,255,.2)}50%{box-shadow:0 0 20px rgba(255,255,255,.5)}}
+
+/* COMBO */
+#comboDisplay{position:absolute;top:72px;left:12px;z-index:8;text-align:left;pointer-events:none}
+.combo-text{font-family:'Fredoka One',cursive;font-size:1.35rem;text-shadow:0 0 15px currentColor;animation:combo-bounce .3s ease}
+@keyframes combo-bounce{0%{transform:scale(1.3)}100%{transform:scale(1)}}
+.combo-sub{font-size:.63rem;font-weight:700;opacity:.85}
+
+/* TUTORIAL */
+#tutorialOverlay{position:absolute;inset:0;z-index:25;background:rgba(15,7,40,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center}
+#tutorialOverlay.hidden{display:none}
+.tut-icon{font-size:3.5rem;animation:tut-bounce 1s ease-in-out infinite alternate}
+@keyframes tut-bounce{from{transform:translateY(0)}to{transform:translateY(-12px)}}
+.tut-title{font-family:'Fredoka One',cursive;font-size:1.7rem;color:#c084fc;margin:10px 0 6px}
+.tut-text{color:#d1d5db;font-size:.9rem;line-height:1.6;max-width:300px}
+.tut-controls{display:flex;gap:12px;margin:16px 0;flex-wrap:wrap;justify-content:center}
+.tut-ctrl{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:10px 14px;font-size:.75rem;color:#e2d9f3;text-align:center}
+.tut-ctrl-icon{font-size:1.4rem;display:block;margin-bottom:3px}
+
+/* MISS FLASH */
+#missFlash{position:absolute;inset:0;pointer-events:none;z-index:6;opacity:0;background:radial-gradient(ellipse at center,transparent 40%,rgba(248,113,113,.35) 100%)}
+#missFlash.flash{animation:miss-flash .35s ease forwards}
+@keyframes miss-flash{0%{opacity:1}100%{opacity:0}}
+
+#bgCanvas{position:absolute;inset:0;pointer-events:none;z-index:0}
+</style>
+</head>
+<body>
+<div id="gameWrapper">
+  <canvas id="bgCanvas"></canvas>
+  <canvas id="gameCanvas"></canvas>
+  <div id="missFlash"></div>
+  <button id="pauseBtn">⏸</button>
+  <div id="powerupHUD"></div>
+  <div id="comboDisplay"></div>
+
+  <div id="levelBanner">
+    <div class="banner-inner">
+      <div class="banner-level" id="bannerLevel">¡NIVEL 2!</div>
+      <div class="banner-name" id="bannerName">Atardecer Mágico</div>
+      <div class="banner-heart" id="bannerHeart"></div>
+      <div class="banner-emojis" id="bannerEmojis">🌅✨🌟</div>
+    </div>
+  </div>
+
+  <div id="tutorialOverlay">
+    <div class="tut-icon">🧺</div>
+    <div class="tut-title">¿Cómo jugar?</div>
+    <div class="tut-text">Mueve la canasta para atrapar frutas y objetos mágicos. ¡Cuidado con las bombas! 💣<br><br>Cada nivel te da una <strong style="color:#f87171">❤️ vida extra</strong> si perdiste alguna.</div>
+    <div class="tut-controls">
+      <div class="tut-ctrl"><span class="tut-ctrl-icon">👆</span>Toca y arrastra</div>
+      <div class="tut-ctrl"><span class="tut-ctrl-icon">🖱️</span>Mouse</div>
+      <div class="tut-ctrl"><span class="tut-ctrl-icon">⬅️➡️</span>Flechas</div>
+    </div>
+    <button class="ui-btn btn-primary" onclick="closeTutorial()">¡A jugar! 🚀</button>
+  </div>
+
+  <!-- START SCREEN -->
+  <div class="screen" id="startScreen">
+    <div class="star-field" id="starField"></div>
+    <div class="logo-container">
+      <div class="logo-glow"></div>
+      <div style="font-size:clamp(2.2rem,9vw,3.5rem);margin-bottom:6px">🌟🌺🌟</div>
+      <div class="game-title">Jardín de Estrellas</div>
+      <div class="game-subtitle">✨ Edición Mágica ✨</div>
+    </div>
+    <div class="age-selector">
+      <button class="age-btn active" onclick="setAge('kids',this)">7–9 años</button>
+      <button class="age-btn" onclick="setAge('junior',this)">10–12 años</button>
+      <button class="age-btn" onclick="setAge('teen',this)">13–16 años</button>
+    </div>
+    <div class="mode-grid">
+      <button class="mode-btn selected" onclick="selectMode('classic',this)">
+        <span class="mode-icon">🍎</span><span class="mode-name">Clásico</span><span class="mode-desc">Atrapa frutas</span>
+      </button>
+      <button class="mode-btn" onclick="selectMode('blitz',this)">
+        <span class="mode-icon">⚡</span><span class="mode-name">Blitz</span><span class="mode-desc">60 segundos</span>
+      </button>
+      <button class="mode-btn" onclick="selectMode('zen',this)">
+        <span class="mode-icon">🌊</span><span class="mode-name">Zen</span><span class="mode-desc">Sin vidas</span>
+      </button>
+      <button class="mode-btn" onclick="selectMode('ultra',this)">
+        <span class="mode-icon">💎</span><span class="mode-name">Ultra</span><span class="mode-desc">Máximo caos</span>
+      </button>
+    </div>
+    <button class="play-btn" onclick="startGame()">¡JUGAR! 🚀</button>
+    <div class="highscore-display" id="startHighscore">🏆 Mejor puntuación: 0</div>
+  </div>
+
+  <!-- PAUSE SCREEN -->
+  <div class="screen hidden" id="pauseScreen">
+    <div style="font-size:3rem;margin-bottom:8px">⏸️</div>
+    <div style="font-family:'Fredoka One',cursive;font-size:2rem;color:#c084fc;margin-bottom:18px">Pausa</div>
+    <div class="btn-row">
+      <button class="ui-btn btn-primary" onclick="resumeGame()">▶ Continuar</button>
+      <button class="ui-btn btn-secondary" onclick="goHome()">🏠 Inicio</button>
+    </div>
+  </div>
+
+  <!-- GAME OVER SCREEN -->
+  <div class="screen hidden" id="gameOverScreen">
+    <div class="go-title" id="goTitle">¡Fin del Juego!</div>
+    <div class="go-hearts" id="goHearts"></div>
+    <div class="go-score" id="goScore">Puntuación: 0</div>
+    <div class="new-record hidden" id="newRecord">🏆 ¡NUEVO RÉCORD! 🏆</div>
+    <div class="stats-grid">
+      <div class="stat-box"><span class="stat-val" id="statLevel">1</span><span class="stat-lbl">Nivel alcanzado</span></div>
+      <div class="stat-box"><span class="stat-val" id="statCaught">0</span><span class="stat-lbl">Frutas atrapadas</span></div>
+      <div class="stat-box"><span class="stat-val" id="statCombo">0</span><span class="stat-lbl">Combo máximo</span></div>
+      <div class="stat-box"><span class="stat-val" id="statAccuracy">0%</span><span class="stat-lbl">Precisión</span></div>
+    </div>
+    <div class="btn-row">
+      <button class="ui-btn btn-primary" onclick="startGame()">¡Otra vez! 🔄</button>
+      <button class="ui-btn btn-secondary" onclick="goHome()">🏠 Inicio</button>
+    </div>
+    <button class="ui-btn" id="rewardAdBtn" onclick="watchAdForLife()"
+      style="background:linear-gradient(135deg,#be185d,#f43f5e,#fb7185);color:white;border:none;
+             margin-top:10px;box-shadow:0 4px 20px rgba(244,63,94,.5);font-size:.95rem;
+             padding:12px 22px;border-radius:50px;font-family:Fredoka One,cursive;letter-spacing:.5px;cursor:pointer">
+      📺 Ver anuncio para ganar ❤️
+    </button>
+    <div id="adNotReadyMsg" style="color:#9ca3af;font-size:.75rem;margin-top:6px;display:none">
+      ⏳ Cargando anuncio... inténtalo en un momento
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  AUDIO ENGINE
+// ═══════════════════════════════════════════════════════════════
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let actx;
+function getAudio(){ if(!actx) actx=new AudioCtx(); return actx; }
+function playTone(freq,type,dur,vol=.3,delay=0){
+  try{
+    const c=getAudio(), o=c.createOscillator(), g=c.createGain();
+    o.connect(g); g.connect(c.destination);
+    o.type=type; o.frequency.value=freq;
+    const t=c.currentTime+delay;
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(vol,t+.02);
+    g.gain.exponentialRampToValueAtTime(.001,t+dur);
+    o.start(t); o.stop(t+dur+.05);
+  }catch(e){}
+}
+const sfx={
+  catch:   ()=>{ playTone(523,'sine',.1,.22); playTone(659,'sine',.1,.22,.06); playTone(784,'sine',.18,.22,.12); },
+  miss:    ()=>{ playTone(220,'sawtooth',.18,.2); playTone(196,'sawtooth',.14,.15,.1); },
+  bomb:    ()=>{ playTone(100,'sawtooth',.3,.4); playTone(80,'square',.2,.3,.1); },
+  levelUp: ()=>{ [523,659,784,1047].forEach((f,i)=>playTone(f,'sine',.3,.3,i*.15)); },
+  gameOver:()=>{ [392,349,311,262].forEach((f,i)=>playTone(f,'sawtooth',.4,.25,i*.18)); },
+  powerup: ()=>{ [659,784,988,1175].forEach((f,i)=>playTone(f,'sine',.2,.2,i*.08)); },
+  combo:   (n)=>{ playTone(440+n*30,'sine',.15,.3); playTone(550+n*30,'triangle',.15,.2,.05); },
+  shield:  ()=>{ playTone(800,'sine',.15,.25); },
+  timebonus:()=>{ playTone(1000,'sine',.12,.2); playTone(1200,'sine',.12,.2,.08); },
+  heartBonus:()=>{ playTone(880,'sine',.15,.28); playTone(1100,'sine',.12,.22,.1); playTone(1320,'sine',.15,.28,.2); },
+  loseHeart:()=>{ playTone(300,'sawtooth',.25,.3); playTone(250,'sawtooth',.2,.25,.12); },
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  BACKGROUND STARS CANVAS
+// ═══════════════════════════════════════════════════════════════
+const bgCanvas=document.getElementById('bgCanvas'), bgCtx=bgCanvas.getContext('2d');
+const bgStars=[];
+function initBgStars(){
+  bgCanvas.width=bgCanvas.offsetWidth; bgCanvas.height=bgCanvas.offsetHeight;
+  bgStars.length=0;
+  for(let i=0;i<130;i++) bgStars.push({x:Math.random()*bgCanvas.width,y:Math.random()*bgCanvas.height,r:Math.random()*1.5+.3,speed:Math.random()*.3+.05,alpha:Math.random(),dalpha:(Math.random()-.5)*.015});
+}
+function animateBg(){
+  bgCtx.clearRect(0,0,bgCanvas.width,bgCanvas.height);
+  bgStars.forEach(s=>{
+    s.alpha+=s.dalpha;
+    if(s.alpha<=0||s.alpha>=1) s.dalpha*=-1;
+    s.y+=s.speed;
+    if(s.y>bgCanvas.height){s.y=0;s.x=Math.random()*bgCanvas.width;}
+    bgCtx.beginPath(); bgCtx.arc(s.x,s.y,s.r,0,Math.PI*2);
+    bgCtx.fillStyle=`rgba(255,255,255,${s.alpha.toFixed(2)})`; bgCtx.fill();
+  });
+  requestAnimationFrame(animateBg);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════════════════════════
+const LEVELS=[
+  {name:'Cielo Azul',        bg:['#0a1628','#0d2457','#1a3a8f'], items:['🍎','🍊','🍋','🍇','🍓'],                          speed:2.2, freq:1750, scoreNeeded:80,   bombChanceExtra:0,    multiShot:0},
+  {name:'Atardecer Mágico',  bg:['#1a0a0a','#6b2c1a','#c2410c'], items:['🍎','🍊','🍋','🍇','🍓','🌟'],                    speed:3.0, freq:1550, scoreNeeded:200,  bombChanceExtra:.02,  multiShot:0},
+  {name:'Jardín Verde',      bg:['#052e16','#14532d','#166534'],  items:['🍎','🍊','🍋','🍇','🍓','🌟','🍬'],              speed:3.9, freq:1350, scoreNeeded:380,  bombChanceExtra:.03,  multiShot:1},
+  {name:'Campo Morado',      bg:['#1e1b4b','#3730a3','#6d28d9'], items:['🍎','🍊','🍋','🍇','🍓','🌟','🍬','💎'],        speed:5.0, freq:1150, scoreNeeded:620,  bombChanceExtra:.04,  multiShot:1},
+  {name:'Jardín Mágico',     bg:['#0c0a1e','#1e1b4b','#4c1d95'], items:['🍎','🍊','🍋','🍇','🍓','🌟','🍬','💎','🔮'],  speed:6.2, freq:980,  scoreNeeded:950,  bombChanceExtra:.05,  multiShot:2},
+  {name:'Dimensión Cósmica', bg:['#000005','#0f0728','#1e0954'], items:['🍎','🍊','🍋','🍇','🍓','🌟','🍬','💎','🔮','🌈'],speed:7.8,freq:820,  scoreNeeded:1400, bombChanceExtra:.06,  multiShot:2},
+  {name:'El Caos Estelar',   bg:['#050505','#0f172a','#1e293b'], items:['🍎','🍊','🍋','🍇','🍓','🌟','🍬','💎','🔮','🌈','⚡'],speed:9.5,freq:680,scoreNeeded:Infinity,bombChanceExtra:.08,multiShot:3},
+];
+const ITEM_VALUES={'🍎':1,'🍊':1,'🍋':1,'🍇':1,'🍓':1,'🌟':3,'🍬':2,'💎':5,'🔮':4,'🌈':8,'⚡':6};
+const ITEM_SIZES= {'🍎':1,'🍊':1,'🍋':1,'🍇':1,'🍓':1,'🌟':1.3,'🍬':.9,'💎':1.2,'🔮':1.1,'🌈':1.5,'⚡':1.3};
+const POWERUPS={
+  '🛡️':{label:'Escudo', dur:6000,color:'#38bdf8'},
+  '🧲':{label:'Imán',   dur:5000,color:'#a855f7'},
+  '⏰':{label:'+Tiempo',dur:0,   color:'#4ade80'},
+  '🌀':{label:'Lento',  dur:5000,color:'#f97316'},
+  '❤️':{label:'+Vida',  dur:0,   color:'#f43f5e'},
+};
+const AGE_CONFIG={
+  kids:  {speedMult:.7,  lives:5,bombChance:.03,powerupChance:.13,basketMult:1.15},
+  junior:{speedMult:1.0, lives:3,bombChance:.07,powerupChance:.10,basketMult:1.0},
+  teen:  {speedMult:1.35,lives:3,bombChance:.12,powerupChance:.08,basketMult:.88},
+};
+const MODE_CONFIG={
+  classic:{blitz:false,zen:false,ultra:false,speedMult:1,   bombMult:1},
+  blitz:  {blitz:true, zen:false,ultra:false,speedMult:1,   bombMult:1,  blitzTime:60},
+  zen:    {blitz:false,zen:true, ultra:false,speedMult:.85, bombMult:.5},
+  ultra:  {blitz:false,zen:false,ultra:true, speedMult:1.55,bombMult:1.8},
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════════════
+const canvas=document.getElementById('gameCanvas'), ctx=canvas.getContext('2d');
+let W,H;
+let gameState='start';
+let selectedMode='classic', selectedAge='kids';
+let score,level,lives,maxLives,combo,maxCombo;
+let items,particles,powerupItems,activePowerups;
+let basket,basketWidth,basketHeight;
+let lastItemTime,lastPowerupTime;
+let frameId;
+let totalCaught,totalMissed;
+let blitzTimer;
+let magnetActive,shieldActive,slowActive;
+let bgTransition,currentBgColors;
+let highscores={};
+let tutorialSeen=false;
+let heartAnims=[];       // floating ❤️ on level-up
+let loseHeartAnims=[];   // broken 💔 on life lost
+let lastLevelForBonus=0;
+let screenShake=0;       // camera shake intensity
+
+function loadHS(){ try{highscores=JSON.parse(localStorage.getItem('jes_hs')||'{}');}catch(e){highscores={};} }
+function saveHS(){
+  const k=`${selectedMode}_${selectedAge}`;
+  if(!highscores[k]||score>highscores[k]){ highscores[k]=score; try{localStorage.setItem('jes_hs',JSON.stringify(highscores));}catch(e){} return true; }
+  return false;
+}
+function getHS(){ return highscores[`${selectedMode}_${selectedAge}`]||0; }
+
+// ═══════════════════════════════════════════════════════════════
+//  UI HELPERS
+// ═══════════════════════════════════════════════════════════════
+const show=id=>document.getElementById(id).classList.remove('hidden');
+const hide=id=>document.getElementById(id).classList.add('hidden');
+
+function setAge(age,btn){
+  selectedAge=age;
+  document.querySelectorAll('.age-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  updateHSDisplay();
+}
+function selectMode(mode,btn){
+  selectedMode=mode;
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  updateHSDisplay();
+}
+function updateHSDisplay(){ document.getElementById('startHighscore').textContent=`🏆 Mejor: ${getHS()} pts  (${selectedMode} / ${selectedAge})`; }
+function goHome(){
+  cancelAnimationFrame(frameId); gameState='start';
+  hide('gameOverScreen'); hide('pauseScreen'); show('startScreen');
+  document.getElementById('pauseBtn').style.display='none';
+  document.getElementById('powerupHUD').innerHTML='';
+  document.getElementById('comboDisplay').innerHTML='';
+  updateHSDisplay();
+}
+function resumeGame(){ hide('pauseScreen'); gameState='playing'; requestAnimationFrame(gameLoop); }
+function closeTutorial(){ hide('tutorialOverlay'); tutorialSeen=true; requestAnimationFrame(gameLoop); }
+
+function triggerMissFlash(){
+  const f=document.getElementById('missFlash');
+  f.classList.remove('flash'); void f.offsetWidth; f.classList.add('flash');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  LEVEL BANNER
+// ═══════════════════════════════════════════════════════════════
+function showLevelBanner(gotHeart){
+  const lvl=LEVELS[Math.min(level-1,LEVELS.length-1)];
+  document.getElementById('bannerLevel').textContent=`¡NIVEL ${level}!`;
+  document.getElementById('bannerName').textContent=lvl.name;
+  document.getElementById('bannerHeart').textContent=gotHeart?'❤️ +1 Vida':'';
+  document.getElementById('bannerEmojis').textContent=lvl.items.slice(-3).join('')||'✨🌟💫';
+  const b=document.getElementById('levelBanner');
+  b.classList.remove('show'); void b.offsetWidth; b.classList.add('show');
+  sfx.levelUp();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  RESIZE
+// ═══════════════════════════════════════════════════════════════
+function resize(){
+  W=canvas.offsetWidth; H=canvas.offsetHeight;
+  canvas.width=W; canvas.height=H;
+  bgCanvas.width=bgCanvas.offsetWidth; bgCanvas.height=bgCanvas.offsetHeight;
+  if(basket){
+    const a=AGE_CONFIG[selectedAge];
+    basketWidth=Math.min(W*.22,100)*(a.basketMult||1);
+    basketHeight=basketWidth*.52;
+    basket.y=H-basketHeight-20;
+    basket.x=Math.min(Math.max(basket.x,basketWidth/2),W-basketWidth/2);
+  }
+}
+window.addEventListener('resize',resize);
+
+// ═══════════════════════════════════════════════════════════════
+//  START GAME
+// ═══════════════════════════════════════════════════════════════
+function startGame(){
+  loadHS();
+  hide('startScreen'); hide('gameOverScreen'); hide('pauseScreen');
+  score=0; level=1; combo=0; maxCombo=0;
+  totalCaught=0; totalMissed=0;
+  items=[]; particles=[]; powerupItems=[]; activePowerups={};
+  magnetActive=false; shieldActive=false; slowActive=false;
+  lastItemTime=0; lastPowerupTime=0;
+  bgTransition=0; screenShake=0;
+  heartAnims=[]; loseHeartAnims=[]; lastLevelForBonus=0;
+  blitzTimer=MODE_CONFIG[selectedMode].blitz?MODE_CONFIG[selectedMode].blitzTime:null;
+  const a=AGE_CONFIG[selectedAge];
+  lives=a.lives; maxLives=a.lives;
+  if(selectedMode==='zen') lives=Infinity;
+  resize();
+  const am=a.basketMult||1;
+  basketWidth=Math.min(W*.22,100)*am;
+  basketHeight=basketWidth*.52;
+  basket={x:W/2,y:H-basketHeight-20};
+  currentBgColors=[...LEVELS[0].bg];
+  document.getElementById('pauseBtn').style.display='flex';
+  document.getElementById('powerupHUD').innerHTML='';
+  document.getElementById('comboDisplay').innerHTML='';
+  gameState='playing';
+  if(!tutorialSeen){ gameState='tutorial'; show('tutorialOverlay'); }
+  else { lastTime=performance.now(); requestAnimationFrame(gameLoop); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  PAUSE
+// ═══════════════════════════════════════════════════════════════
+document.getElementById('pauseBtn').addEventListener('click',()=>{
+  if(gameState==='playing'){ gameState='paused'; show('pauseScreen'); cancelAnimationFrame(frameId); }
+  else if(gameState==='paused') resumeGame();
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  INPUT
+// ═══════════════════════════════════════════════════════════════
+let mouseX=-1, keys={};
+canvas.addEventListener('mousemove',e=>{ const r=canvas.getBoundingClientRect(); mouseX=(e.clientX-r.left)*(W/r.width); });
+canvas.addEventListener('touchmove',e=>{ e.preventDefault(); const r=canvas.getBoundingClientRect(); mouseX=(e.touches[0].clientX-r.left)*(W/r.width); },{passive:false});
+canvas.addEventListener('touchstart',e=>{ e.preventDefault(); const r=canvas.getBoundingClientRect(); mouseX=(e.touches[0].clientX-r.left)*(W/r.width); if(actx&&actx.state==='suspended') actx.resume(); },{passive:false});
+document.addEventListener('keydown',e=>{ keys[e.code]=true; if(['ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault(); });
+document.addEventListener('keyup',e=>{ keys[e.code]=false; });
+
+// ═══════════════════════════════════════════════════════════════
+//  GAME OVER
+// ═══════════════════════════════════════════════════════════════
+function triggerGameOver(){
+  gameState='over'; sfx.gameOver(); cancelAnimationFrame(frameId);
+  // Notify Android bridge
+  if(typeof Android!=='undefined'){ try{ Android.onGameOver(); }catch(e){} }
+  const isNew=saveHS();
+  const titles={blitz:'¡Se acabó el tiempo!',ultra:'¡Caído en combate!',classic:'¡Fin del Juego!',zen:'¡Bien jugado!'};
+  document.getElementById('goTitle').textContent=titles[selectedMode]||'¡Fin del Juego!';
+  // Show hearts row
+  const hRow=lives===Infinity?'∞':'❤️'.repeat(Math.max(lives,0))+'🖤'.repeat(Math.max(maxLives-Math.max(lives,0),0));
+  document.getElementById('goHearts').textContent=hRow;
+  document.getElementById('goScore').textContent=`Puntuación: ${score}`;
+  document.getElementById('statLevel').textContent=level;
+  document.getElementById('statCaught').textContent=totalCaught;
+  document.getElementById('statCombo').textContent=maxCombo;
+  const tot=totalCaught+totalMissed;
+  document.getElementById('statAccuracy').textContent=tot>0?Math.round(totalCaught/tot*100)+'%':'--';
+  if(isNew) show('newRecord'); else hide('newRecord');
+  show('gameOverScreen');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  PARTICLES
+// ═══════════════════════════════════════════════════════════════
+function spawnParticles(x,y,emoji,val){
+  const count=Math.min(3+val,8);
+  for(let i=0;i<count;i++){
+    const a=(Math.PI*2/count)*i+Math.random()*.5, sp=2+Math.random()*3;
+    particles.push({x,y,emoji,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-3,alpha:1,life:.95+Math.random()*.03,size:16+val*3,rot:Math.random()*Math.PI*2});
+  }
+  particles.push({x,y:y-18,emoji:null,text:`+${val}`,textColor:val>=5?'#facc15':'#4ade80',vx:(Math.random()-.5)*1.5,vy:-2.5,alpha:1,life:.96,size:13+val*2});
+}
+function spawnExplosion(x,y){
+  screenShake=10;
+  for(let i=0;i<16;i++){
+    const a=Math.random()*Math.PI*2,sp=2+Math.random()*5;
+    particles.push({x,y,emoji:['💥','🔥','✨'][Math.floor(Math.random()*3)],vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-2,alpha:1,life:.93,size:14});
+  }
+}
+function spawnLoseHeart(x,y){
+  loseHeartAnims.push({x,y,vy:-3,vx:(Math.random()-.5)*2,alpha:1,life:.965,size:26,rot:0,drot:(Math.random()-.5)*.15});
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SPAWN ITEM
+// ═══════════════════════════════════════════════════════════════
+function spawnItem(){
+  const a=AGE_CONFIG[selectedAge], mc=MODE_CONFIG[selectedMode];
+  const lvl=LEVELS[Math.min(level-1,LEVELS.length-1)];
+  const speedMult=(a.speedMult||1)*(mc.speedMult||1);
+  const bombChance=(a.bombChance+(lvl.bombChanceExtra||0))*(mc.bombMult||1);
+
+  // Decide type: powerup first, then bomb, then fruit
+  if(Math.random()<a.powerupChance&&level>=2){
+    const puKeys=Object.keys(POWERUPS);
+    const pu=puKeys[Math.floor(Math.random()*puKeys.length)];
+    powerupItems.push({x:30+Math.random()*(W-60),y:-30,emoji:pu,vy:1.9*speedMult,size:30,wobble:Math.random()*Math.PI*2});
+    return;
+  }
+  const isBomb=Math.random()<bombChance&&level>=2;
+  const emoji=isBomb?'💣':lvl.items[Math.floor(Math.random()*lvl.items.length)];
+  let sp=lvl.speed*speedMult;
+  if(slowActive) sp*=.55;
+  // Higher levels: random sideways drift
+  const drift=level>=4?(Math.random()-.5)*1.2:0;
+  items.push({x:30+Math.random()*(W-60),y:-30,emoji,vy:sp+Math.random()*1.2,vx:drift,size:27*(ITEM_SIZES[emoji]||1),wobble:Math.random()*Math.PI*2,isBomb,rot:0,drot:(Math.random()-.5)*.06});
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  POWERUP HUD
+// ═══════════════════════════════════════════════════════════════
+function updatePowerupHUD(){
+  const hud=document.getElementById('powerupHUD');
+  hud.innerHTML='';
+  Object.entries(activePowerups).forEach(([pu,data])=>{
+    if(!data.active) return;
+    const rem=Math.max(0,Math.ceil((data.expires-Date.now())/1000));
+    const cfg=POWERUPS[pu];
+    const el=document.createElement('div');
+    el.className='powerup-indicator';
+    el.style.borderColor=cfg.color;
+    el.innerHTML=`${pu} <span style="color:${cfg.color}">${cfg.label}</span>${data.expires?` ${rem}s`:''}`;
+    hud.appendChild(el);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  LEVEL UP CHECK
+// ═══════════════════════════════════════════════════════════════
+function checkLevelUp(){
+  const cur=LEVELS[Math.min(level-1,LEVELS.length-1)];
+  if(cur.scoreNeeded!==Infinity&&score>=cur.scoreNeeded&&level<LEVELS.length){
+    level++;
+    let gotHeart=false;
+    if(selectedMode!=='zen'&&level>lastLevelForBonus){
+      lastLevelForBonus=level;
+      // Always expand max row, grant a life if below max
+      const oldMax=maxLives;
+      maxLives=Math.min(maxLives+1,8);
+      if(lives<maxLives){ lives++; gotHeart=true; }
+      else if(maxLives===oldMax){ /* already at 8 cap */ }
+      if(gotHeart){
+        // Burst of heart particles from HUD area
+        for(let i=0;i<8;i++){
+          heartAnims.push({
+            x:W*.75+(Math.random()-.5)*70, y:38,
+            vy:-(2.2+Math.random()*2.2),vx:(Math.random()-.5)*3,
+            alpha:1,size:20+Math.random()*14,life:.957+Math.random()*.01
+          });
+        }
+        sfx.heartBonus();
+      }
+    }
+    showLevelBanner(gotHeart);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  COLLISION
+// ═══════════════════════════════════════════════════════════════
+function checkCollisions(){
+  const mouthHalfW=basketWidth/2+5;
+  const mouthY=basket.y;
+  const catchH=20;
+
+  // Magnet pull
+  if(magnetActive){
+    items.forEach(item=>{
+      if(!item.isBomb){
+        const dx=basket.x-item.x, dy=mouthY-item.y;
+        const dist=Math.sqrt(dx*dx+dy*dy);
+        if(dist<basketWidth*1.9){ item.x+=dx*.09; item.y+=dy*.07; }
+      }
+    });
+  }
+
+  // Items
+  items=items.filter(item=>{
+    const inX=item.x>basket.x-mouthHalfW&&item.x<basket.x+mouthHalfW;
+    const inY=item.y>=mouthY-5&&item.y<=mouthY+catchH;
+    if(inX&&inY&&item.vy>=0){
+      if(item.isBomb){
+        if(shieldActive){
+          activePowerups['🛡️'].active=false; shieldActive=false;
+          spawnExplosion(item.x,item.y); sfx.shield(); updatePowerupHUD();
+        } else {
+          spawnExplosion(item.x,item.y); sfx.bomb(); combo=0; updateComboDisplay();
+          if(lives!==Infinity){
+            spawnLoseHeart(basket.x,basket.y);
+            sfx.loseHeart(); triggerMissFlash();
+            lives--;
+            screenShake=8;
+            if(lives<=0){ triggerGameOver(); return false; }
+          }
+        }
+        return false;
+      }
+      const val=(ITEM_VALUES[item.emoji]||1)*(combo>=5?2:1);
+      score+=val; totalCaught++; combo++;
+      if(combo>maxCombo) maxCombo=combo;
+      sfx.catch();
+      if(combo>=5) sfx.combo(Math.min(combo,15));
+      spawnParticles(item.x,item.y,item.emoji,val);
+      updateComboDisplay(); checkLevelUp();
+      return false;
+    }
+    if(item.y>H+50){
+      totalMissed++;
+      if(!item.isBomb){
+        combo=0; updateComboDisplay();
+        if(lives!==Infinity&&selectedMode!=='zen'){
+          sfx.miss(); triggerMissFlash();
+          spawnLoseHeart(item.x,H-60);
+          lives--; screenShake=4;
+          if(lives<=0){ triggerGameOver(); return false; }
+        }
+      }
+      return false;
+    }
+    return true;
+  });
+
+  // Powerups
+  powerupItems=powerupItems.filter(pu=>{
+    const inX=pu.x>basket.x-mouthHalfW&&pu.x<basket.x+mouthHalfW;
+    const inY=pu.y>=mouthY-5&&pu.y<=mouthY+catchH;
+    if(inX&&inY){ activatePowerup(pu.emoji); return false; }
+    if(pu.y>H+40) return false;
+    return true;
+  });
+}
+
+function activatePowerup(pu){
+  sfx.powerup();
+  if(pu==='❤️'){
+    if(lives<maxLives){ lives++; }
+    else { score+=8; }
+    spawnParticles(basket.x,basket.y,'❤️',2);
+    // Small heart burst
+    for(let i=0;i<4;i++) heartAnims.push({x:basket.x+(Math.random()-.5)*40,y:basket.y,vy:-(1.5+Math.random()*2),vx:(Math.random()-.5)*2.5,alpha:1,size:18+Math.random()*10,life:.955});
+    return;
+  }
+  if(pu==='⏰'){
+    if(blitzTimer!==null) blitzTimer=Math.min(blitzTimer+15,120);
+    score+=10; sfx.timebonus();
+    spawnParticles(basket.x,basket.y,'⏰',5); return;
+  }
+  if(activePowerups[pu]?.timeout) clearTimeout(activePowerups[pu].timeout);
+  const cfg=POWERUPS[pu];
+  activePowerups[pu]={active:true,expires:cfg.dur>0?Date.now()+cfg.dur:0,timeout:cfg.dur>0?setTimeout(()=>deactivatePowerup(pu),cfg.dur):null};
+  if(pu==='🛡️') shieldActive=true;
+  if(pu==='🧲') magnetActive=true;
+  if(pu==='🌀') slowActive=true;
+  updatePowerupHUD();
+  spawnParticles(basket.x,basket.y,pu,3);
+}
+function deactivatePowerup(pu){
+  if(activePowerups[pu]) activePowerups[pu].active=false;
+  if(pu==='🛡️') shieldActive=false;
+  if(pu==='🧲') magnetActive=false;
+  if(pu==='🌀') slowActive=false;
+  updatePowerupHUD();
+}
+
+function updateComboDisplay(){
+  const cd=document.getElementById('comboDisplay');
+  if(combo>=3){
+    const color=combo>=10?'#f43f5e':combo>=7?'#f97316':combo>=5?'#facc15':'#4ade80';
+    const label=combo>=10?'🔥 EN LLAMAS':combo>=7?'⚡ IMPARABLE':combo>=5?'✨ ¡INCREÍBLE!':'👍 BIEN';
+    cd.innerHTML=`<div class="combo-text" style="color:${color}">x${combo} COMBO!</div><div class="combo-sub" style="color:${color}">${label}</div>`;
+  } else { cd.innerHTML=''; }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  DRAW HELPERS
+// ═══════════════════════════════════════════════════════════════
+function roundRect(c,x,y,w,h,r){
+  if(w<2*r) r=w/2; if(h<2*r) r=h/2;
+  c.beginPath();
+  c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r);
+  c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath();
+}
+
+function drawHeart(c,cx,cy,r,filled){
+  c.save(); c.beginPath();
+  c.moveTo(cx,cy+r*.35);
+  c.bezierCurveTo(cx,cy-r*.1, cx-r*1.1,cy-r*.1, cx-r*1.1,cy-r*.55);
+  c.bezierCurveTo(cx-r*1.1,cy-r*1.2, cx,cy-r*.85, cx,cy-r*.1);
+  c.bezierCurveTo(cx,cy-r*.85, cx+r*1.1,cy-r*1.2, cx+r*1.1,cy-r*.55);
+  c.bezierCurveTo(cx+r*1.1,cy-r*.1, cx,cy-r*.1, cx,cy+r*.35);
+  c.closePath();
+  if(filled){
+    const g=c.createRadialGradient(cx,cy-r*.2,0,cx,cy,r*1.3);
+    g.addColorStop(0,'#ff8fa3'); g.addColorStop(.5,'#f43f5e'); g.addColorStop(1,'#be123c');
+    c.fillStyle=g; c.fill();
+    c.beginPath(); c.ellipse(cx-r*.35,cy-r*.45,r*.25,r*.15,-.5,0,Math.PI*2);
+    c.fillStyle='rgba(255,255,255,.4)'; c.fill();
+  } else {
+    c.fillStyle='rgba(255,255,255,.07)'; c.fill();
+    c.strokeStyle='rgba(255,100,120,.35)'; c.lineWidth=1.5; c.stroke();
+  }
+  c.restore();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  DRAW BG
+// ═══════════════════════════════════════════════════════════════
+function drawBackground(targetColors){
+  if(currentBgColors[0]!==targetColors[0]){
+    bgTransition=Math.min(bgTransition+.016,1);
+    if(bgTransition>=1){ currentBgColors=[...targetColors]; bgTransition=0; }
+  }
+  const grad=ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,currentBgColors[0]);
+  grad.addColorStop(.5,currentBgColors[1]||currentBgColors[0]);
+  grad.addColorStop(1,currentBgColors[2]||currentBgColors[0]);
+  ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  DRAW HUD
+// ═══════════════════════════════════════════════════════════════
+function drawHUD(now){
+  const pad=14;
+  // Top bar bg
+  ctx.fillStyle='rgba(0,0,0,.38)';
+  roundRect(ctx,pad,pad,W-pad*2,54,16); ctx.fill();
+
+  // Score
+  ctx.fillStyle='#facc15';
+  ctx.font=`bold ${Math.round(W*.05)}px Fredoka One,cursive`;
+  ctx.textAlign='left';
+  ctx.fillText(`⭐ ${score}`,pad+14,pad+34);
+
+  // Level badge
+  ctx.fillStyle='#c084fc';
+  ctx.textAlign='center';
+  ctx.fillText(`Nv.${level}`,W/2,pad+34);
+
+  // Blitz timer
+  if(blitzTimer!==null){
+    const tc=blitzTimer<=10?'#f87171':'#4ade80';
+    ctx.fillStyle=tc;
+    ctx.font=`bold ${Math.round(W*.044)}px Fredoka One,cursive`;
+    ctx.textAlign='right';
+    ctx.fillText(`⏱ ${Math.ceil(blitzTimer)}s`,W-pad-12,pad+34);
+  }
+
+  // ── HEARTS ROW ──────────────────────────────────────────────
+  if(lives!==Infinity){
+    const hs=Math.min(16,(W*.36)/Math.max(maxLives,3));
+    const totalW=maxLives*(hs+4);
+    let hx=W-pad-8-totalW;
+    const hy=pad+19;
+    for(let i=0;i<maxLives;i++){
+      const filled=i<lives;
+      // Newest filled heart pulses after level-up bonus
+      const isNewest=filled&&i===lives-1&&heartAnims.length>0;
+      const scale=isNewest?1+.22*Math.abs(Math.sin(now*.015)):1;
+      ctx.save();
+      ctx.translate(hx+hs/2,hy);
+      ctx.scale(scale,scale);
+      drawHeart(ctx,0,0,hs*.48,filled);
+      ctx.restore();
+      hx+=hs+4;
+    }
+  } else {
+    ctx.fillStyle='#818cf8'; ctx.font=`bold ${Math.round(W*.044)}px Fredoka One,cursive`;
+    ctx.textAlign='right';
+    ctx.fillText('∞ Zen',W-pad-12,pad+34);
+  }
+
+  // ── PROGRESS BAR ────────────────────────────────────────────
+  const lvlData=LEVELS[Math.min(level-1,LEVELS.length-1)];
+  if(lvlData.scoreNeeded!==Infinity){
+    const prevScore=level>1?LEVELS[level-2].scoreNeeded:0;
+    const progress=Math.min((score-prevScore)/(lvlData.scoreNeeded-prevScore),1);
+    const bx=pad,by=pad+60,bw=W-pad*2,bh=7;
+    ctx.fillStyle='rgba(0,0,0,.3)'; roundRect(ctx,bx,by,bw,bh,4); ctx.fill();
+    const grd=ctx.createLinearGradient(bx,0,bx+bw,0);
+    grd.addColorStop(0,'#818cf8'); grd.addColorStop(1,'#c084fc');
+    ctx.fillStyle=grd; roundRect(ctx,bx,by,bw*progress,bh,4); ctx.fill();
+    ctx.shadowColor='#c084fc'; ctx.shadowBlur=7;
+    ctx.fillStyle='rgba(192,132,252,.4)'; roundRect(ctx,bx,by,bw*progress,bh,4); ctx.fill();
+    ctx.shadowBlur=0;
+  }
+
+  // ── FLOATING HEART ANIMS (level-up reward) ──────────────────
+  heartAnims=heartAnims.filter(h=>{
+    h.x+=h.vx; h.y+=h.vy; h.vy+=.05;
+    h.alpha*=h.life;
+    if(h.alpha<.03) return false;
+    ctx.globalAlpha=h.alpha;
+    ctx.save(); ctx.translate(h.x,h.y);
+    drawHeart(ctx,0,0,h.size*.5,true);
+    ctx.restore(); ctx.globalAlpha=1;
+    return true;
+  });
+
+  // ── BROKEN HEART ANIMS (lose life) ──────────────────────────
+  loseHeartAnims=loseHeartAnims.filter(h=>{
+    h.x+=h.vx; h.y+=h.vy; h.vy+=.12;
+    h.rot+=h.drot; h.alpha*=h.life;
+    if(h.alpha<.03) return false;
+    ctx.globalAlpha=h.alpha;
+    ctx.save(); ctx.translate(h.x,h.y); ctx.rotate(h.rot);
+    ctx.font=`${h.size}px Arial`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('💔',0,0);
+    ctx.restore(); ctx.globalAlpha=1;
+    return true;
+  });
+
+  // Mode label
+  ctx.font='bold 10px Nunito,sans-serif';
+  ctx.fillStyle='rgba(255,255,255,.35)';
+  ctx.textAlign='right';
+  ctx.fillText(selectedMode.toUpperCase(),W-pad-8,H-10);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  DRAW BASKET
+// ═══════════════════════════════════════════════════════════════
+function drawBasket(){
+  const bx=basket.x,by=basket.y,bw=basketWidth,bh=basketHeight;
+
+  // Magnet ring
+  if(magnetActive){
+    ctx.beginPath(); ctx.arc(bx,by+bh/2,bw*.72,0,Math.PI*2);
+    ctx.strokeStyle='rgba(168,85,247,.25)'; ctx.lineWidth=2;
+    ctx.setLineDash([5,5]); ctx.stroke(); ctx.setLineDash([]);
+  }
+  // Shield glow
+  if(shieldActive){
+    ctx.beginPath(); ctx.arc(bx,by+bh/2,bw*.68,0,Math.PI*2);
+    const shg=ctx.createRadialGradient(bx,by+bh/2,0,bx,by+bh/2,bw*.68);
+    shg.addColorStop(0,'rgba(56,189,248,0)'); shg.addColorStop(.8,'rgba(56,189,248,.15)'); shg.addColorStop(1,'rgba(56,189,248,.45)');
+    ctx.fillStyle=shg; ctx.fill();
+    ctx.strokeStyle='rgba(56,189,248,.7)'; ctx.lineWidth=2.5; ctx.stroke();
+  }
+
+  ctx.save(); ctx.translate(bx,by);
+
+  // Shadow
+  ctx.shadowColor='rgba(0,0,0,.4)'; ctx.shadowBlur=8; ctx.shadowOffsetY=4;
+
+  // Body (trapezoid)
+  ctx.beginPath();
+  ctx.moveTo(-bw/2+8,0); ctx.lineTo(bw/2-8,0);
+  ctx.lineTo(bw/2,bh); ctx.lineTo(-bw/2,bh); ctx.closePath();
+  const gr=ctx.createLinearGradient(0,0,0,bh);
+  gr.addColorStop(0,'#fb923c'); gr.addColorStop(.5,'#ea580c'); gr.addColorStop(1,'#c2410c');
+  ctx.fillStyle=gr; ctx.fill();
+  ctx.shadowBlur=0; ctx.shadowOffsetY=0;
+
+  // Weave
+  ctx.strokeStyle='rgba(0,0,0,.2)'; ctx.lineWidth=1.2;
+  for(let i=-bw/2+8;i<bw/2;i+=11){ ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i+5,bh); ctx.stroke(); }
+  for(let j=5;j<bh;j+=10){ ctx.beginPath(); ctx.moveTo(-bw/2+4,j); ctx.lineTo(bw/2-4,j); ctx.stroke(); }
+
+  // Rim
+  ctx.beginPath(); ctx.moveTo(-bw/2-4,-4); ctx.lineTo(bw/2+4,-4);
+  ctx.lineWidth=8; ctx.strokeStyle='#fdba74'; ctx.lineCap='round'; ctx.stroke();
+  ctx.lineWidth=4; ctx.strokeStyle='#f97316'; ctx.stroke();
+
+  // Handle
+  ctx.beginPath(); ctx.arc(0,-10,bw*.3,Math.PI,0);
+  ctx.lineWidth=4; ctx.strokeStyle='#fdba74'; ctx.lineCap='round'; ctx.stroke();
+  ctx.lineWidth=2; ctx.strokeStyle='#ea580c'; ctx.stroke();
+
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  DRAW ITEMS
+// ═══════════════════════════════════════════════════════════════
+function drawItems(now){
+  items.forEach(item=>{
+    ctx.save(); ctx.translate(item.x,item.y);
+    if(item.isBomb){ ctx.shadowColor='#ef4444'; ctx.shadowBlur=14+Math.sin(now*.007)*4; }
+    const wobble=Math.sin(item.wobble+now*.003)*3;
+    ctx.translate(wobble,0); ctx.rotate(item.rot);
+    ctx.font=`${item.size}px Arial`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(item.emoji,0,0); ctx.shadowBlur=0; ctx.restore();
+  });
+}
+function drawPowerupItems(now){
+  powerupItems.forEach(pu=>{
+    ctx.save(); ctx.translate(pu.x,pu.y);
+    const cfg=POWERUPS[pu.emoji];
+    if(cfg){ctx.shadowColor=cfg.color; ctx.shadowBlur=20+Math.sin(now*.005)*6;}
+    const wobble=Math.sin(pu.wobble+now*.005)*5;
+    ctx.translate(0,wobble);
+    ctx.font=`${pu.size}px Arial`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(pu.emoji,0,0); ctx.shadowBlur=0;
+    // Pulse ring
+    const col=cfg?cfg.color:'#fff';
+    const ring=ctx.createRadialGradient(0,0,8,0,0,26);
+    ring.addColorStop(0,'transparent'); ring.addColorStop(.7,col+'33'); ring.addColorStop(1,'transparent');
+    ctx.fillStyle=ring; ctx.beginPath(); ctx.arc(0,0,26,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  });
+}
+function drawParticles(){
+  particles.forEach(p=>{
+    if(p.alpha<=0) return;
+    ctx.globalAlpha=p.alpha;
+    if(p.text){
+      ctx.font=`bold ${p.size}px Fredoka One,cursive`;
+      ctx.fillStyle=p.textColor; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(p.text,p.x,p.y);
+    } else {
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot||0);
+      ctx.font=`${p.size}px Arial`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(p.emoji,0,0); ctx.restore();
+    }
+    ctx.globalAlpha=1;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  GAME LOOP
+// ═══════════════════════════════════════════════════════════════
+let lastTime=0;
+function gameLoop(now){
+  if(gameState!=='playing') return;
+  frameId=requestAnimationFrame(gameLoop);
+  const dt=Math.min(now-lastTime,50);
+  lastTime=now;
+
+  // Blitz countdown
+  if(blitzTimer!==null){ blitzTimer-=dt/1000; if(blitzTimer<=0){blitzTimer=0;triggerGameOver();return;} }
+
+  // Basket movement
+  const bspd=basketWidth*.042;
+  if(keys['ArrowLeft'])  basket.x-=bspd;
+  if(keys['ArrowRight']) basket.x+=bspd;
+  if(mouseX>=0) basket.x+=(mouseX-basket.x)*.2;
+  basket.x=Math.max(basketWidth/2,Math.min(W-basketWidth/2,basket.x));
+
+  // Screen shake decay
+  screenShake*=.82;
+
+  // ── SPAWN ITEMS ─────────────────────────────────────────────
+  const lvlData=LEVELS[Math.min(level-1,LEVELS.length-1)];
+  const baseInterval=slowActive?lvlData.freq*1.65:lvlData.freq;
+  if(now-lastItemTime>baseInterval){
+    spawnItem(); lastItemTime=now;
+    const ms=lvlData.multiShot||0;
+    // Level 3+: guaranteed double shot
+    if(level>=3){ setTimeout(spawnItem,190); }
+    // Level 4+: triple
+    if(level>=4){ setTimeout(spawnItem,370); }
+    // Level 5+: quad + extra random
+    if(level>=5){ setTimeout(spawnItem,560); if(Math.random()<.4) setTimeout(spawnItem,750); }
+    // Level 6+: rain (5-6 shots)
+    if(level>=6){ setTimeout(spawnItem,120); setTimeout(spawnItem,300); setTimeout(spawnItem,480); }
+    // Level 7: STORM (7-8 shots per cycle)
+    if(level>=7){ setTimeout(spawnItem,80); setTimeout(spawnItem,200); setTimeout(spawnItem,400); setTimeout(spawnItem,620); }
+  }
+
+  // Powerup spawner (independent timer)
+  const puInterval=Math.max(4500-level*350,1800);
+  if(now-lastPowerupTime>puInterval){ lastPowerupTime=now; spawnItem(); /* forces a powerup-eligible spawn */ }
+
+  // Move items
+  items.forEach(item=>{
+    item.y+=item.vy*(dt/16.67);
+    item.x+=(item.vx||0)*(dt/16.67);
+    item.wobble+=.04; item.rot+=(item.drot||0);
+    // Bounce off walls
+    if(item.x<20||item.x>W-20) item.vx=-(item.vx||0);
+  });
+  powerupItems.forEach(pu=>{ pu.y+=pu.vy*(dt/16.67); pu.wobble+=.05; });
+
+  // Particles
+  particles=particles.filter(p=>{ p.x+=p.vx; p.y+=p.vy; p.vy+=.15; p.alpha*=p.life; p.rot=(p.rot||0)+.08; return p.alpha>.02; });
+
+  // Collisions
+  checkCollisions();
+  if(gameState!=='playing') return;
+
+  // ── DRAW ────────────────────────────────────────────────────
+  const shake=screenShake>0.5;
+  if(shake){ ctx.save(); ctx.translate((Math.random()-.5)*screenShake,(Math.random()-.5)*screenShake); }
+
+  drawBackground(LEVELS[Math.min(level-1,LEVELS.length-1)].bg);
+  drawPowerupItems(now);
+  drawItems(now);
+  drawParticles();
+  drawBasket();
+
+  if(shake) ctx.restore();
+  drawHUD(now);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  START SCREEN STAR FIELD
+// ═══════════════════════════════════════════════════════════════
+function buildStarField(){
+  const sf=document.getElementById('starField'); sf.innerHTML='';
+  for(let i=0;i<65;i++){
+    const s=document.createElement('div'); s.className='star-dot';
+    const sz=Math.random()*3+1;
+    s.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${2+Math.random()*4}s;--delay:${Math.random()*3}s;opacity:${Math.random()}`;
+    sf.appendChild(s);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════════
+loadHS(); buildStarField(); resize(); initBgStars(); animateBg(); updateHSDisplay();
+ctx.fillStyle='#0f0728'; ctx.fillRect(0,0,W||300,H||600);
+
+// ═══════════════════════════════════════════════════════════════
+//  ANDROID BRIDGE — Rewarded Ads & AdMob
+// ═══════════════════════════════════════════════════════════════
+let _savedScore=0, _savedLevel=1, _savedMaxLives=3, _savedMode='classic', _savedAge='junior';
+
+function watchAdForLife(){
+  _savedScore=score; _savedLevel=level;
+  _savedMaxLives=maxLives; _savedMode=selectedMode; _savedAge=selectedAge;
+  if(typeof Android!=='undefined'){
+    try{ Android.showRewardedAd(); return; }catch(e){}
+  }
+  // Browser fallback (testing)
+  grantExtraLife();
+}
+
+function grantExtraLife(){
+  // Called by Android after the reward is earned — continue with +1 vida
+  hide('gameOverScreen');
+  score=_savedScore; level=_savedLevel;
+  maxLives=_savedMaxLives; selectedMode=_savedMode; selectedAge=_savedAge;
+  lives=1;
+  items=[]; particles=[]; powerupItems=[]; activePowerups={};
+  magnetActive=false; shieldActive=false; slowActive=false;
+  lastItemTime=0; lastPowerupTime=0;
+  bgTransition=0; screenShake=0;
+  heartAnims=[]; loseHeartAnims=[]; lastLevelForBonus=Math.max(level-1,0);
+  blitzTimer=MODE_CONFIG[selectedMode].blitz ? Math.max((blitzTimer||20),20) : null;
+  document.getElementById('pauseBtn').style.display='flex';
+  document.getElementById('powerupHUD').innerHTML='';
+  document.getElementById('comboDisplay').innerHTML='';
+  resize();
+  const a=AGE_CONFIG[selectedAge];
+  const am=a.basketMult||1;
+  basketWidth=Math.min(W*.22,100)*am; basketHeight=basketWidth*.52;
+  basket={x:W/2, y:H-basketHeight-20};
+  currentBgColors=[...LEVELS[Math.min(level-1,LEVELS.length-1)].bg];
+  gameState='playing';
+  lastTime=performance.now();
+  requestAnimationFrame(gameLoop);
+}
+
+function showAdNotReady(){
+  const msg=document.getElementById('adNotReadyMsg');
+  if(msg){ msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; },3000); }
+}
+
+</script>
+</body>
+</html>
