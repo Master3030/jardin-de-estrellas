@@ -277,6 +277,33 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:none}
 .info-action-title{color:#e2d9f3;font-size:.9rem;font-weight:700}
 .info-action-sub{color:#6b7280;font-size:.73rem;margin-top:2px}
 .info-action-arrow{color:#6b7280;font-size:1.3rem;font-weight:300}
+
+/* ══ POLICY OVERLAY ══ */
+#policyOv{position:absolute;inset:0;z-index:56;background:rgba(0,0,0,.7);
+  opacity:0;pointer-events:none;transition:opacity .25s;backdrop-filter:blur(5px)}
+#policyOv.open{opacity:1;pointer-events:all}
+.policy-sh{position:absolute;bottom:0;left:0;right:0;max-height:88vh;
+  overflow-y:auto;background:linear-gradient(180deg,#15054a,#0a0220);
+  border-radius:22px 22px 0 0;border-top:2px solid rgba(192,132,252,.4);
+  animation:slideUp .28s ease;padding-bottom:20px}
+.policy-drag{width:38px;height:4px;background:rgba(255,255,255,.18);
+  border-radius:2px;margin:13px auto 0}
+.policy-hdr{display:flex;align-items:center;justify-content:space-between;
+  padding:13px 18px 8px;border-bottom:1px solid rgba(255,255,255,.07)}
+.policy-title{font-family:'Fredoka One',cursive;font-size:1.2rem;color:#c084fc}
+.policy-close{background:rgba(255,255,255,.08);border:none;color:white;
+  width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:.95rem}
+.policy-body{padding:16px 18px 10px}
+.policy-section{margin-bottom:18px}
+.policy-section-title{font-family:'Fredoka One',cursive;font-size:.95rem;
+  color:#a78bfa;margin-bottom:7px}
+.policy-section p{color:#9ca3af;font-size:.82rem;line-height:1.7;margin-bottom:6px}
+.policy-section ul{color:#9ca3af;font-size:.82rem;line-height:1.7;
+  padding-left:16px;margin-top:5px}
+.policy-section ul li{margin-bottom:3px}
+.policy-hl{color:#c084fc;font-weight:700}
+.policy-updated{text-align:center;color:rgba(255,255,255,.2);
+  font-size:.68rem;margin-top:16px;padding-bottom:4px}
 </style>
 </head>
 <body>
@@ -375,7 +402,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:none}
   <div class="xpage" id="page-scores">
     <div class="xpage-title">🏆 Récords</div>
     <div class="hs-wrap" id="hsWrap"></div>
-
+    
   </div>
 
   <!-- ═══ PÁGINA CONFIG ═══ -->
@@ -539,6 +566,19 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:none}
     </div>
   </div>
 
+
+<!-- ══ POLICY OVERLAY (Privacy & Terms) ══ -->
+<div id="policyOv" onclick="policyBgClick(event)">
+  <div class="policy-sh" id="policySh">
+    <div class="policy-drag"></div>
+    <div class="policy-hdr">
+      <div class="policy-title" id="policyTitle">🔒 Política de Privacidad</div>
+      <button class="policy-close" onclick="closePolicy()">✕</button>
+    </div>
+    <div class="policy-body" id="policyBody"></div>
+  </div>
+</div>
+
 </div><!-- end gameWrapper -->
 
 <script>
@@ -554,7 +594,7 @@ var AD_IDS_DEFAULT={
 };
 
 var AD_IDS=AD_IDS_DEFAULT;
-var ADMIN_PASS='jardin2025';
+var ADMIN_PASS='jardin2026';
 
 function loadLocalConfig(){
   try{
@@ -1600,17 +1640,28 @@ function openSupportForm(){
   }
   window.open(SUP_URL,'_blank');
 }
+// ── Contenido de las políticas ─────────────────────────────────
+var PRIVACY_CONTENT = '<div class="policy-section"><div class="policy-section-title">🌟 Información general</div><p><span class="policy-hl">Jardín de Estrellas</span> es un juego móvil desarrollado de forma independiente en Paraguay. Esta política explica qué información recopilamos y cómo la usamos.</p></div><div class="policy-section"><div class="policy-section-title">📊 Datos que recopilamos</div><p>La aplicación <span class="policy-hl">no recopila datos personales</span> como nombre, correo electrónico, número de teléfono o ubicación.</p><p>Los únicos datos almacenados son:</p><ul><li>Puntajes y récords del juego (solo en tu dispositivo)</li><li>Preferencias de configuración del juego</li><li>Conteo de sesiones (solo en tu dispositivo)</li></ul><p>Todos estos datos permanecen <span class="policy-hl">únicamente en tu dispositivo</span> y no se envían a ningún servidor.</p></div><div class="policy-section"><div class="policy-section-title">📺 Publicidad (AdMob)</div><p>La aplicación utiliza <span class="policy-hl">Google AdMob</span> para mostrar anuncios. AdMob puede recopilar cierta información del dispositivo para personalizar los anuncios, de acuerdo con su propia política de privacidad.</p><p>Esto puede incluir:</p><ul><li>Identificadores de publicidad del dispositivo</li><li>Información sobre el sistema operativo</li><li>Datos de uso para personalización de anuncios</li></ul></div><div class="policy-section"><div class="policy-section-title">🌐 Conexión a internet</div><p>La aplicación requiere internet para cargar el juego. No se transmite información personal durante estas conexiones.</p></div><div class="policy-section"><div class="policy-section-title">👶 Menores de edad</div><p>Jardín de Estrellas es apto para todas las edades, desde 7 años. No recopilamos información de menores de edad intencionalmente.</p></div><div class="policy-section"><div class="policy-section-title">✏️ Cambios a esta política</div><p>Podemos actualizar esta política ocasionalmente. Los cambios se publicarán en la aplicación.</p></div><div class="policy-section"><div class="policy-section-title">📬 Contacto</div><p>Para preguntas sobre esta política, contactanos a través del formulario de soporte en la sección Info.</p></div><div class="policy-updated">© 2026 Jardín de Estrellas · Todos los derechos reservados</div>';
+
+var TERMS_CONTENT = '<div class="policy-section"><div class="policy-section-title">✅ Aceptación</div><p>Al instalar o usar <span class="policy-hl">Jardín de Estrellas</span>, aceptás estos términos de uso. Si no estás de acuerdo, te pedimos que no uses la aplicación.</p></div><div class="policy-section"><div class="policy-section-title">🎮 Uso permitido</div><p>Podés usar la aplicación para:</p><ul><li>Jugar de forma personal y no comercial</li><li>Disfrutar del contenido en tu dispositivo Android</li></ul><p>Queda prohibido:</p><ul><li>Modificar o distribuir el código sin autorización</li><li>Usar la app con fines comerciales sin permiso</li><li>Eludir los sistemas de publicidad o seguridad</li><li>Usar herramientas para hacer trampa en el juego</li></ul></div><div class="policy-section"><div class="policy-section-title">📺 Publicidad</div><p>La aplicación muestra anuncios a través de <span class="policy-hl">Google AdMob</span> para financiar el desarrollo y mantenerla gratuita. Los anuncios de video son opcionales y se ofrecen como recompensa para obtener vidas adicionales.</p></div><div class="policy-section"><div class="policy-section-title">🔄 Actualizaciones</div><p>Podemos actualizar la aplicación para mejorarla, corregir errores o agregar funciones. Recomendamos mantenerla actualizada para la mejor experiencia.</p></div><div class="policy-section"><div class="policy-section-title">⚠️ Limitación de responsabilidad</div><p>La aplicación se proporciona <span class="policy-hl">"tal como está"</span>. No nos hacemos responsables de interrupciones del servicio, pérdida de datos del dispositivo ni daños indirectos.</p></div><div class="policy-section"><div class="policy-section-title">🧒 Menores de edad</div><p>La aplicación es apta para todas las edades. Los menores deben contar con el consentimiento de sus padres o tutores.</p></div><div class="policy-section"><div class="policy-section-title">📋 Propiedad intelectual</div><p>Todos los elementos del juego (diseño, código, nombre) son propiedad de sus autores. El uso de la aplicación no otorga ningún derecho de propiedad.</p></div><div class="policy-section"><div class="policy-section-title">📬 Contacto</div><p>Para consultas sobre estos términos, contactanos a través del formulario de soporte en la sección Info.</p></div><div class="policy-updated">© 2026 Jardín de Estrellas · Todos los derechos reservados</div>';
+
 function openPrivacy(){
-  if(typeof Android!=='undefined'){
-    try{ Android.openUrl(PRIVACY_URL); return; }catch(e){}
-  }
-  window.open(PRIVACY_URL,'_blank');
+  document.getElementById('policyTitle').textContent='🔒 Política de Privacidad';
+  document.getElementById('policyBody').innerHTML=PRIVACY_CONTENT;
+  document.getElementById('policyOv').classList.add('open');
+  document.getElementById('policySh').scrollTop=0;
 }
 function openTerms(){
-  if(typeof Android!=='undefined'){
-    try{ Android.openUrl(TERMS_URL); return; }catch(e){}
-  }
-  window.open(TERMS_URL,'_blank');
+  document.getElementById('policyTitle').textContent='📄 Términos de Uso';
+  document.getElementById('policyBody').innerHTML=TERMS_CONTENT;
+  document.getElementById('policyOv').classList.add('open');
+  document.getElementById('policySh').scrollTop=0;
+}
+function closePolicy(){
+  document.getElementById('policyOv').classList.remove('open');
+}
+function policyBgClick(e){
+  if(e.target===document.getElementById('policyOv')) closePolicy();
 }
 
 </script>
