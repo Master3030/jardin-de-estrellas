@@ -237,6 +237,24 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:none}
   padding:12px 24px;border-radius:50px;font-family:'Fredoka One',cursive;
   letter-spacing:.5px;cursor:pointer;display:block;width:100%;max-width:280px}
 #adNotReadyMsg{color:#9ca3af;font-size:.73rem;margin-top:6px;display:none}
+
+/* ══ CUSTOM CONFIRM MODAL ══ */
+#confirmModal{position:absolute;inset:0;z-index:60;background:rgba(0,0,0,.7);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .2s;backdrop-filter:blur(4px)}
+#confirmModal.open{opacity:1;pointer-events:all}
+.confirm-box{background:linear-gradient(160deg,#15054a,#0a0220);
+  border:1px solid rgba(192,132,252,.3);border-radius:20px;
+  padding:28px 24px;width:280px;text-align:center;
+  animation:pwIn .2s ease;box-shadow:0 20px 50px rgba(0,0,0,.6)}
+.confirm-msg{color:#e2d9f3;font-size:.95rem;line-height:1.5;margin-bottom:22px;font-weight:700}
+.confirm-btns{display:flex;gap:10px}
+.confirm-btn-cancel{flex:1;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.08);color:#9ca3af;font-family:'Nunito',sans-serif;
+  font-size:.9rem;font-weight:700;cursor:pointer}
+.confirm-btn-ok{flex:1;padding:12px;border-radius:12px;border:none;
+  background:linear-gradient(135deg,#7c3aed,#a855f7);color:white;
+  font-family:'Fredoka One',cursive;font-size:.95rem;cursor:pointer}
 </style>
 </head>
 <body>
@@ -645,9 +663,11 @@ function gPg(p){
   currentPage=p;
   document.querySelectorAll('.xpage').forEach(function(pg){ pg.classList.remove('active'); });
   document.querySelectorAll('.nb').forEach(function(b){ b.classList.remove('active'); });
+  // Hide pause button on all non-game pages
+  document.getElementById('pauseBtn').style.display='none';
   if(p==='home'){
-    // show start or game over
     if(gameState==='start'){ show('startScreen'); }
+    else if(gameState==='over'){ show('gameOverScreen'); }
   } else {
     hide('startScreen'); hide('gameOverScreen'); hide('pauseScreen');
     document.getElementById('page-'+p).classList.add('active');
@@ -682,14 +702,22 @@ function goHome(){
   cancelAnimationFrame(frameId); gameState='start';
   hide('gameOverScreen'); hide('pauseScreen'); show('startScreen');
   document.getElementById('pauseBtn').style.display='none';
+  document.getElementById('bottomNav').style.display='flex';
   document.getElementById('powerupHUD').innerHTML='';
   document.getElementById('comboDisplay').innerHTML='';
   document.querySelectorAll('.xpage').forEach(function(p){p.classList.remove('active');});
   document.querySelectorAll('.nb').forEach(function(b){b.classList.remove('active');});
   document.getElementById('nb-home').classList.add('active');
   updateHSDisplay();
+  resize();
 }
-function resumeGame(){ hide('pauseScreen'); gameState='playing'; requestAnimationFrame(gameLoop); }
+function resumeGame(){
+  hide('pauseScreen');
+  document.getElementById('bottomNav').style.display='none';
+  document.getElementById('pauseBtn').style.display='flex';
+  gameState='playing';
+  requestAnimationFrame(gameLoop);
+}
 function closeTutorial(){ hide('tutorialOverlay'); tutorialSeen=true; requestAnimationFrame(gameLoop); }
 function triggerMissFlash(){
   var f=document.getElementById('missFlash');
@@ -728,12 +756,28 @@ function renderScores(){
     wrap.appendChild(em);
   }
 }
+var _confirmCallback=null;
+function showConfirm(msg,cb){
+  document.getElementById('confirmMsg').textContent=msg;
+  document.getElementById('confirmModal').classList.add('open');
+  _confirmCallback=cb;
+}
+function confirmOk(){
+  document.getElementById('confirmModal').classList.remove('open');
+  if(_confirmCallback){ _confirmCallback(); _confirmCallback=null; }
+}
+function confirmCancel(){
+  document.getElementById('confirmModal').classList.remove('open');
+  _confirmCallback=null;
+}
+
 function clearAllScores(){
-  if(!confirm('¿Borrar todos los récords?')) return;
-  highscores={};
-  try{ localStorage.removeItem('jes_hs'); }catch(e){}
-  renderScores();
-  updateHSDisplay();
+  showConfirm('¿Borrar todos los récords?', function(){
+    highscores={};
+    try{ localStorage.removeItem('jes_hs'); }catch(e){}
+    renderScores();
+    updateHSDisplay();
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -870,7 +914,8 @@ function resize(){
     var a=AGE_CONFIG[selectedAge];
     basketWidth=Math.min(W*.22,100)*(a.basketMult||1);
     basketHeight=basketWidth*.52;
-    basket.y=H-basketHeight-20;
+    var navH=(document.getElementById('bottomNav').style.display==='none')?0:60;
+    basket.y=H-basketHeight-20-navH;
     basket.x=Math.min(Math.max(basket.x,basketWidth/2),W-basketWidth/2);
   }
 }
@@ -902,6 +947,7 @@ function startGame(){
   basketHeight=basketWidth*.52;
   basket={x:W/2,y:H-basketHeight-20};
   currentBgColors=[].concat(LEVELS[0].bg);
+  document.getElementById('bottomNav').style.display='none';
   var pb=document.getElementById('pauseBtn');
   pb.style.display='flex';
   document.getElementById('powerupHUD').innerHTML='';
@@ -915,7 +961,12 @@ function startGame(){
 //  PAUSE
 // ═══════════════════════════════════════════════════════════════
 document.getElementById('pauseBtn').addEventListener('click',function(){
-  if(gameState==='playing'){ gameState='paused'; show('pauseScreen'); cancelAnimationFrame(frameId); }
+  if(gameState==='playing'){
+    gameState='paused';
+    show('pauseScreen');
+    document.getElementById('bottomNav').style.display='flex';
+    cancelAnimationFrame(frameId);
+  }
   else if(gameState==='paused') resumeGame();
 });
 
@@ -934,6 +985,9 @@ document.addEventListener('keyup',function(e){ keys[e.code]=false; });
 // ═══════════════════════════════════════════════════════════════
 function triggerGameOver(){
   gameState='over'; sfx.gameOver(); cancelAnimationFrame(frameId);
+  // Mostrar nav de nuevo al terminar el juego
+  document.getElementById('bottomNav').style.display='flex';
+  document.getElementById('pauseBtn').style.display='none';
   // Notificar Android para interstitial
   if(typeof Android!=='undefined'){ try{ Android.onGameOver(); }catch(e){} }
   var isNew=saveHS();
@@ -984,6 +1038,7 @@ function grantExtraLife(){
   bgTransition=0; screenShake=0;
   heartAnims=[]; loseHeartAnims=[]; lastLevelForBonus=Math.max(level-1,0);
   blitzTimer=MODE_CONFIG[selectedMode].blitz?Math.max((blitzTimer||20),20):null;
+  document.getElementById('bottomNav').style.display='none';
   var pb=document.getElementById('pauseBtn');
   pb.style.display='flex';
   document.getElementById('powerupHUD').innerHTML='';
