@@ -402,7 +402,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:none}
   <div class="xpage" id="page-scores">
     <div class="xpage-title">🏆 Récords</div>
     <div class="hs-wrap" id="hsWrap"></div>
-   <!-- ═══ <button class="xbtn outline" style="margin-top:12px;max-width:200px" onclick="clearAllScores()">🗑️ Borrar todo</button>  ═══ -->
+    <button class="xbtn outline" style="margin-top:12px;max-width:200px" onclick="clearAllScores()">🗑️ Borrar todo</button>
   </div>
 
   <!-- ═══ PÁGINA CONFIG ═══ -->
@@ -587,10 +587,10 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:none}
 //  El admin los configura desde el panel oculto
 // ═══════════════════════════════════════════════════════════════
 var AD_IDS_DEFAULT={
-  app:         '',
-  banner:      '',
-  interstitial:'',
-  rewarded:    ''
+  app:         'ca-app-pub-3940256099942544~3347511713',
+  banner:      'ca-app-pub-3940256099942544/6300978111',
+  interstitial:'ca-app-pub-3940256099942544/1033173712',
+  rewarded:    'ca-app-pub-3940256099942544/5224354917'
 };
 
 var AD_IDS=AD_IDS_DEFAULT;
@@ -598,18 +598,19 @@ var ADMIN_PASS='jardin2025';
 
 function loadLocalConfig(){
   try{
-    var saved=localStorage.getItem('jes_cfg');
-    if(saved){
-      var cfg=JSON.parse(saved);
-      if(cfg.adminPassword) ADMIN_PASS=cfg.adminPassword;
+    var raw=localStorage.getItem('jes_cfg')||sessionStorage.getItem('jes_cfg');
+    if(raw){
+      var cfg=JSON.parse(raw);
+      if(cfg.adminPassword && cfg.adminPassword.length>0) ADMIN_PASS=cfg.adminPassword;
       if(cfg.adIds){
-        if(cfg.adIds.app)          AD_IDS.app=cfg.adIds.app;
-        if(cfg.adIds.banner)       AD_IDS.banner=cfg.adIds.banner;
-        if(cfg.adIds.interstitial) AD_IDS.interstitial=cfg.adIds.interstitial;
-        if(cfg.adIds.rewarded)     AD_IDS.rewarded=cfg.adIds.rewarded;
+        if(cfg.adIds.app          && cfg.adIds.app.length>0)          AD_IDS.app=cfg.adIds.app;
+        if(cfg.adIds.banner       && cfg.adIds.banner.length>0)       AD_IDS.banner=cfg.adIds.banner;
+        if(cfg.adIds.interstitial && cfg.adIds.interstitial.length>0) AD_IDS.interstitial=cfg.adIds.interstitial;
+        if(cfg.adIds.rewarded     && cfg.adIds.rewarded.length>0)     AD_IDS.rewarded=cfg.adIds.rewarded;
       }
     }
-  }catch(e){}
+  }catch(e){ console.log('loadLocalConfig error:',e); }
+  // Notify Android with current IDs (saved or defaults)
   notifyAndroidAdIds();
 }
 
@@ -618,13 +619,15 @@ function saveLocalConfig(){
     var cfg={
       adminPassword:ADMIN_PASS,
       adIds:{
-        app:AD_IDS.app,
-        banner:AD_IDS.banner,
+        app:         AD_IDS.app,
+        banner:      AD_IDS.banner,
         interstitial:AD_IDS.interstitial,
-        rewarded:AD_IDS.rewarded
+        rewarded:    AD_IDS.rewarded
       }
     };
-    localStorage.setItem('jes_cfg',JSON.stringify(cfg));
+    localStorage.setItem('jes_cfg', JSON.stringify(cfg));
+    // Also save to sessionStorage as backup
+    sessionStorage.setItem('jes_cfg', JSON.stringify(cfg));
   }catch(e){}
 }
 
@@ -932,13 +935,13 @@ function chkPw(){
 //  ADMIN PANEL
 // ═══════════════════════════════════════════════════════════════
 function oAdm(){
-  // Poblar campos con valores actuales
+  // Show current active IDs
   document.getElementById('adm-app').value=AD_IDS.app||'';
   document.getElementById('adm-banner').value=AD_IDS.banner||'';
   document.getElementById('adm-inter').value=AD_IDS.interstitial||'';
   document.getElementById('adm-reward').value=AD_IDS.rewarded||'';
   document.getElementById('adm-pass').value='';
-  // Stats
+  document.getElementById('admStatus').textContent='';
   loadAdmStats();
   document.getElementById('admOv').classList.add('open');
 }
@@ -970,15 +973,20 @@ function saveAdmConfig(){
   var newInter=document.getElementById('adm-inter').value.trim();
   var newReward=document.getElementById('adm-reward').value.trim();
 
-  if(newPass) ADMIN_PASS=newPass;
-  if(newApp)    AD_IDS.app=newApp;
-  if(newBanner) AD_IDS.banner=newBanner;
-  if(newInter)  AD_IDS.interstitial=newInter;
-  if(newReward) AD_IDS.rewarded=newReward;
+  // Only update if field has value (empty = keep current)
+  if(newPass && newPass.length>=4) ADMIN_PASS=newPass;
+  if(newApp    && newApp.length>10)    AD_IDS.app=newApp;
+  if(newBanner && newBanner.length>10) AD_IDS.banner=newBanner;
+  if(newInter  && newInter.length>10)  AD_IDS.interstitial=newInter;
+  if(newReward && newReward.length>10) AD_IDS.rewarded=newReward;
 
+  // Persist to localStorage
   saveLocalConfig();
+  // Tell Android to reinitialize all ads with new IDs
   notifyAndroidAdIds();
-  setAdmStatus('✓ Configuración guardada',true);
+  // Clear password field for security
+  document.getElementById('adm-pass').value='';
+  setAdmStatus('✓ Guardado · Los anuncios se recargarán',true);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1617,12 +1625,10 @@ animateBg();
 updateHSDisplay();
 ctx.fillStyle='#0f0728';
 ctx.fillRect(0,0,W||300,H||600);
-// Cargar config guardada (IDs de anuncios, contraseña admin)
+// Cargar config guardada y notificar IDs a Android
 loadLocalConfig();
 // Contar sesión
 incrementSessions();
-// Pasar IDs default a Android mientras llega Firebase
-notifyAndroidAdIds();
 // Sincronizar toggle de sonido
 document.getElementById('sfxToggle').classList.toggle('on',sfxEnabled);
 // ═══ INFO PAGE ACTIONS ═══
