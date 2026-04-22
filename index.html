@@ -402,7 +402,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:none}
   <div class="xpage" id="page-scores">
     <div class="xpage-title">🏆 Récords</div>
     <div class="hs-wrap" id="hsWrap"></div>
-    <button class="xbtn outline" style="margin-top:12px;max-width:200px" onclick="clearAllScores()">🗑️ Borrar todo</button>
+    
   </div>
 
   <!-- ═══ PÁGINA CONFIG ═══ -->
@@ -588,7 +588,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:none}
 // ═══════════════════════════════════════════════════════════════
 var AD_IDS_DEFAULT={
   app:         'ca-app-pub-3940256099942544~3347511713',
-  banner:      '',
+  banner:      'ca-app-pub-3940256099942544/6300978111',
   interstitial:'ca-app-pub-3940256099942544/1033173712',
   rewarded:    'ca-app-pub-3940256099942544/5224354917'
 };
@@ -966,6 +966,7 @@ function setAdmStatus(msg,isOk){
   setTimeout(function(){ el.textContent=''; el.className='adm-status'; },4000);
 }
 
+// ✅ FUNCIÓN MODIFICADA - AHORA NOTIFICA A ANDROID Y FORZA RECARGA
 function saveAdmConfig(){
   var newPass=document.getElementById('adm-pass').value.trim();
   var newApp=document.getElementById('adm-app').value.trim();
@@ -982,11 +983,20 @@ function saveAdmConfig(){
 
   // Persist to localStorage
   saveLocalConfig();
+  
   // Tell Android to reinitialize all ads with new IDs
   notifyAndroidAdIds();
+  
+  // 🔥 SOLUCIÓN: Forzar recarga de anuncios en Android inmediatamente
+  if(typeof Android !== 'undefined'){
+    try {
+      Android.refreshAds(AD_IDS.interstitial, AD_IDS.rewarded);
+    } catch(e){}
+  }
+  
   // Clear password field for security
   document.getElementById('adm-pass').value='';
-  setAdmStatus('✓ Guardado · Los anuncios se recargarán',true);
+  setAdmStatus('✓ IDs actualizados y aplicados',true);
 }
 
 // ═══════════════════════════════════════════════════════════════
