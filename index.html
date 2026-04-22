@@ -598,19 +598,19 @@ var ADMIN_PASS='jardin2025';
 
 function loadLocalConfig(){
   try{
-    var raw=localStorage.getItem('jes_cfg')||sessionStorage.getItem('jes_cfg');
+    var raw=localStorage.getItem('jes_cfg');
     if(raw){
       var cfg=JSON.parse(raw);
       if(cfg.adminPassword && cfg.adminPassword.length>0) ADMIN_PASS=cfg.adminPassword;
       if(cfg.adIds){
-        if(cfg.adIds.app          && cfg.adIds.app.length>0)          AD_IDS.app=cfg.adIds.app;
-        if(cfg.adIds.banner       && cfg.adIds.banner.length>0)       AD_IDS.banner=cfg.adIds.banner;
-        if(cfg.adIds.interstitial && cfg.adIds.interstitial.length>0) AD_IDS.interstitial=cfg.adIds.interstitial;
-        if(cfg.adIds.rewarded     && cfg.adIds.rewarded.length>0)     AD_IDS.rewarded=cfg.adIds.rewarded;
+        // Guardar incluso si está vacío (para permitir borrar)
+        AD_IDS.app = (cfg.adIds.app !== undefined) ? cfg.adIds.app : AD_IDS_DEFAULT.app;
+        AD_IDS.banner = (cfg.adIds.banner !== undefined) ? cfg.adIds.banner : AD_IDS_DEFAULT.banner;
+        AD_IDS.interstitial = (cfg.adIds.interstitial !== undefined) ? cfg.adIds.interstitial : AD_IDS_DEFAULT.interstitial;
+        AD_IDS.rewarded = (cfg.adIds.rewarded !== undefined) ? cfg.adIds.rewarded : AD_IDS_DEFAULT.rewarded;
       }
     }
   }catch(e){ console.log('loadLocalConfig error:',e); }
-  // Notify Android with current IDs (saved or defaults)
   notifyAndroidAdIds();
 }
 
@@ -619,21 +619,23 @@ function saveLocalConfig(){
     var cfg={
       adminPassword:ADMIN_PASS,
       adIds:{
-        app:         AD_IDS.app,
-        banner:      AD_IDS.banner,
-        interstitial:AD_IDS.interstitial,
-        rewarded:    AD_IDS.rewarded
+        app: AD_IDS.app,
+        banner: AD_IDS.banner,
+        interstitial: AD_IDS.interstitial,
+        rewarded: AD_IDS.rewarded
       }
     };
     localStorage.setItem('jes_cfg', JSON.stringify(cfg));
-    // Also save to sessionStorage as backup
-    sessionStorage.setItem('jes_cfg', JSON.stringify(cfg));
+    console.log('Config guardada:', cfg);
   }catch(e){}
 }
 
 function notifyAndroidAdIds(){
   if(typeof Android!=='undefined'){
-    try{ Android.initAds(AD_IDS.app, AD_IDS.banner, AD_IDS.interstitial, AD_IDS.rewarded); }catch(e){}
+    try{ 
+      Android.initAds(AD_IDS.app, AD_IDS.banner, AD_IDS.interstitial, AD_IDS.rewarded);
+      console.log('Notificado a Android:', AD_IDS);
+    }catch(e){}
   }
 }
 
@@ -932,16 +934,16 @@ function chkPw(){
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  ADMIN PANEL
+//  ADMIN PANEL - VERSIÓN CORREGIDA
 // ═══════════════════════════════════════════════════════════════
 function oAdm(){
-  // Show current active IDs
-  document.getElementById('adm-app').value=AD_IDS.app||'';
-  document.getElementById('adm-banner').value=AD_IDS.banner||'';
-  document.getElementById('adm-inter').value=AD_IDS.interstitial||'';
-  document.getElementById('adm-reward').value=AD_IDS.rewarded||'';
-  document.getElementById('adm-pass').value='';
-  document.getElementById('admStatus').textContent='';
+  // Mostrar valores actuales (incluyendo vacíos)
+  document.getElementById('adm-app').value = AD_IDS.app || '';
+  document.getElementById('adm-banner').value = AD_IDS.banner || '';
+  document.getElementById('adm-inter').value = AD_IDS.interstitial || '';
+  document.getElementById('adm-reward').value = AD_IDS.rewarded || '';
+  document.getElementById('adm-pass').value = '';
+  document.getElementById('admStatus').textContent = '';
   loadAdmStats();
   document.getElementById('admOv').classList.add('open');
 }
@@ -966,37 +968,49 @@ function setAdmStatus(msg,isOk){
   setTimeout(function(){ el.textContent=''; el.className='adm-status'; },4000);
 }
 
-// ✅ FUNCIÓN MODIFICADA - AHORA NOTIFICA A ANDROID Y FORZA RECARGA
 function saveAdmConfig(){
-  var newPass=document.getElementById('adm-pass').value.trim();
-  var newApp=document.getElementById('adm-app').value.trim();
-  var newBanner=document.getElementById('adm-banner').value.trim();
-  var newInter=document.getElementById('adm-inter').value.trim();
-  var newReward=document.getElementById('adm-reward').value.trim();
+  // Obtener valores (permitir vacío)
+  var newPass = document.getElementById('adm-pass').value.trim();
+  var newApp = document.getElementById('adm-app').value.trim();
+  var newBanner = document.getElementById('adm-banner').value.trim();
+  var newInter = document.getElementById('adm-inter').value.trim();
+  var newReward = document.getElementById('adm-reward').value.trim();
 
-  // Only update if field has value (empty = keep current)
-  if(newPass && newPass.length>=4) ADMIN_PASS=newPass;
-  if(newApp    && newApp.length>10)    AD_IDS.app=newApp;
-  if(newBanner && newBanner.length>10) AD_IDS.banner=newBanner;
-  if(newInter  && newInter.length>10)  AD_IDS.interstitial=newInter;
-  if(newReward && newReward.length>10) AD_IDS.rewarded=newReward;
+  // Guardar contraseña (si se proporcionó)
+  if(newPass.length > 0) {
+    ADMIN_PASS = newPass;
+    console.log('Contraseña actualizada');
+  }
 
-  // Persist to localStorage
+  // Guardar IDs (INCLUSO si están vacíos - eso los borra)
+  if(newApp !== undefined) AD_IDS.app = newApp;
+  if(newBanner !== undefined) AD_IDS.banner = newBanner;
+  if(newInter !== undefined) AD_IDS.interstitial = newInter;
+  if(newReward !== undefined) AD_IDS.rewarded = newReward;
+
+  console.log('Nuevos IDs guardados:', {
+    app: AD_IDS.app,
+    banner: AD_IDS.banner,
+    interstitial: AD_IDS.interstitial,
+    rewarded: AD_IDS.rewarded
+  });
+
+  // Guardar en localStorage
   saveLocalConfig();
   
-  // Tell Android to reinitialize all ads with new IDs
+  // Notificar a Android
   notifyAndroidAdIds();
   
-  // 🔥 SOLUCIÓN: Forzar recarga de anuncios en Android inmediatamente
+  // Forzar recarga en Android
   if(typeof Android !== 'undefined'){
     try {
       Android.refreshAds(AD_IDS.interstitial, AD_IDS.rewarded);
-    } catch(e){}
+      console.log('RefreshAds llamado en Android');
+    } catch(e){ console.log('Error calling refreshAds:', e); }
   }
   
-  // Clear password field for security
-  document.getElementById('adm-pass').value='';
-  setAdmStatus('✓ IDs actualizados y aplicados',true);
+  document.getElementById('adm-pass').value = '';
+  setAdmStatus('✓ Configuración guardada', true);
 }
 
 // ═══════════════════════════════════════════════════════════════
