@@ -304,6 +304,22 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:none}
 .policy-hl{color:#c084fc;font-weight:700}
 .policy-updated{text-align:center;color:rgba(255,255,255,.2);
   font-size:.68rem;margin-top:16px;padding-bottom:4px}
+
+/* ══ AD TOGGLES (estilo Sintonía) ══ */
+.adm-toggle-row{display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:8px;padding:10px 14px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
+  border-radius:11px}
+.adm-toggle-label{color:#e2d9f3;font-size:.82rem;font-weight:700}
+.adm-toggle-sub{color:rgba(255,255,255,.3);font-size:.68rem;margin-top:2px}
+.adm-tog{width:44px;height:26px;background:rgba(255,255,255,.12);border-radius:13px;
+  position:relative;cursor:pointer;transition:background .25s;flex-shrink:0;border:none}
+.adm-tog.on{background:linear-gradient(135deg,#7c3aed,#a855f7)}
+.adm-tog::after{content:'';position:absolute;left:3px;top:3px;width:20px;height:20px;
+  background:white;border-radius:50%;transition:transform .25s;
+  box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.adm-tog.on::after{transform:translateX(18px)}
+.adm-input:disabled{opacity:.3;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -549,12 +565,43 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:none}
       <div class="adm-body">
 
         <div class="adm-lbl">📺 AdMob — IDs de anuncios</div>
-        <input class="adm-input" id="adm-app"    type="text" placeholder="App ID  (ca-app-pub-XXXXX~XXXXX)">
+
+        <!-- Toggle BANNER -->
+        <div class="adm-toggle-row">
+          <div>
+            <div class="adm-toggle-label">Banner</div>
+            <div class="adm-toggle-sub">Franja inferior siempre visible</div>
+          </div>
+          <button class="adm-tog" id="tog-banner" onclick="toggleAd('banner',this)"></button>
+        </div>
         <input class="adm-input" id="adm-banner" type="text" placeholder="Banner Ad Unit ID">
-        <input class="adm-input" id="adm-inter"  type="text" placeholder="Interstitial Ad Unit ID">
+
+        <!-- Toggle INTERSTITIAL -->
+        <div class="adm-toggle-row">
+          <div>
+            <div class="adm-toggle-label">Interstitial</div>
+            <div class="adm-toggle-sub">Pantalla completa cada 2 partidas</div>
+          </div>
+          <button class="adm-tog" id="tog-inter" onclick="toggleAd('inter',this)"></button>
+        </div>
+        <input class="adm-input" id="adm-inter" type="text" placeholder="Interstitial Ad Unit ID">
+
+        <!-- Toggle REWARDED -->
+        <div class="adm-toggle-row">
+          <div>
+            <div class="adm-toggle-label">Rewarded (video)</div>
+            <div class="adm-toggle-sub">Video voluntario para ganar ❤️</div>
+          </div>
+          <button class="adm-tog" id="tog-reward" onclick="toggleAd('reward',this)"></button>
+        </div>
         <input class="adm-input" id="adm-reward" type="text" placeholder="Rewarded Ad Unit ID">
-        <div style="color:rgba(255,255,255,.25);font-size:.68rem;margin-top:2px;margin-bottom:12px;line-height:1.5">
-          IDs de prueba: ca-app-pub-3940256099942544/... · Reemplazá por los reales al publicar
+
+        <input class="adm-input" id="adm-app" type="text"
+          placeholder="App ID  (ca-app-pub-XXXXX~XXXXX)"
+          style="margin-top:8px;opacity:.6;font-size:.75rem">
+        <div style="color:rgba(255,255,255,.2);font-size:.65rem;margin-top:2px;margin-bottom:12px;line-height:1.5">
+          IDs de prueba: ca-app-pub-3940256099942544/... · Reemplazá por los reales al publicar.
+          Desactivar un tipo de anuncio envía ID vacío a Android.
         </div>
 
         <div class="adm-sep"></div>
@@ -608,6 +655,9 @@ var AD_IDS_DEFAULT={
 var AD_IDS=AD_IDS_DEFAULT;
 var ADMIN_PASS='jardin2025';
 
+// Flags de activación — por defecto todos ON
+var AD_ENABLED={banner:true, interstitial:true, rewarded:true};
+
 function loadLocalConfig(){
   try{
     var raw=localStorage.getItem('jes_cfg')||sessionStorage.getItem('jes_cfg');
@@ -620,9 +670,13 @@ function loadLocalConfig(){
         if(cfg.adIds.interstitial && cfg.adIds.interstitial.length>0) AD_IDS.interstitial=cfg.adIds.interstitial;
         if(cfg.adIds.rewarded     && cfg.adIds.rewarded.length>0)     AD_IDS.rewarded=cfg.adIds.rewarded;
       }
+      if(cfg.adEnabled){
+        if(typeof cfg.adEnabled.banner      !=='undefined') AD_ENABLED.banner      =cfg.adEnabled.banner;
+        if(typeof cfg.adEnabled.interstitial!=='undefined') AD_ENABLED.interstitial=cfg.adEnabled.interstitial;
+        if(typeof cfg.adEnabled.rewarded    !=='undefined') AD_ENABLED.rewarded    =cfg.adEnabled.rewarded;
+      }
     }
   }catch(e){ console.log('loadLocalConfig error:',e); }
-  // Notify Android with current IDs (saved or defaults)
   notifyAndroidAdIds();
 }
 
@@ -635,17 +689,27 @@ function saveLocalConfig(){
         banner:      AD_IDS.banner,
         interstitial:AD_IDS.interstitial,
         rewarded:    AD_IDS.rewarded
+      },
+      adEnabled:{
+        banner:      AD_ENABLED.banner,
+        interstitial:AD_ENABLED.interstitial,
+        rewarded:    AD_ENABLED.rewarded
       }
     };
     localStorage.setItem('jes_cfg', JSON.stringify(cfg));
-    // Also save to sessionStorage as backup
     sessionStorage.setItem('jes_cfg', JSON.stringify(cfg));
   }catch(e){}
 }
 
 function notifyAndroidAdIds(){
   if(typeof Android!=='undefined'){
-    try{ Android.initAds(AD_IDS.app, AD_IDS.banner, AD_IDS.interstitial, AD_IDS.rewarded); }catch(e){}
+    try{
+      // Si un tipo está desactivado, enviar '' → Android no carga ese anuncio
+      var b = AD_ENABLED.banner      ? AD_IDS.banner       : '';
+      var i = AD_ENABLED.interstitial? AD_IDS.interstitial  : '';
+      var r = AD_ENABLED.rewarded    ? AD_IDS.rewarded      : '';
+      Android.initAds(AD_IDS.app, b, i, r);
+    }catch(e){}
   }
 }
 
@@ -947,15 +1011,40 @@ function chkPw(){
 //  ADMIN PANEL
 // ═══════════════════════════════════════════════════════════════
 function oAdm(){
-  // Show current active IDs
-  document.getElementById('adm-app').value=AD_IDS.app||'';
-  document.getElementById('adm-banner').value=AD_IDS.banner||'';
-  document.getElementById('adm-inter').value=AD_IDS.interstitial||'';
-  document.getElementById('adm-reward').value=AD_IDS.rewarded||'';
-  document.getElementById('adm-pass').value='';
-  document.getElementById('admStatus').textContent='';
+  // Poblar IDs
+  document.getElementById('adm-app').value    = AD_IDS.app||'';
+  document.getElementById('adm-banner').value = AD_IDS.banner||'';
+  document.getElementById('adm-inter').value  = AD_IDS.interstitial||'';
+  document.getElementById('adm-reward').value = AD_IDS.rewarded||'';
+  document.getElementById('adm-pass').value   = '';
+  document.getElementById('admStatus').textContent = '';
+  // Sincronizar toggles con estado actual
+  syncTog('banner',  AD_ENABLED.banner);
+  syncTog('inter',   AD_ENABLED.interstitial);
+  syncTog('reward',  AD_ENABLED.rewarded);
   loadAdmStats();
   document.getElementById('admOv').classList.add('open');
+}
+function syncTog(type, enabled){
+  var btn  = document.getElementById('tog-'+type);
+  var key  = type==='inter'?'adm-inter':(type==='reward'?'adm-reward':'adm-banner');
+  var input= document.getElementById(key);
+  if(btn){
+    if(enabled) btn.classList.add('on');
+    else        btn.classList.remove('on');
+  }
+  if(input) input.disabled = !enabled;
+}
+function toggleAd(type, btn){
+  var enabled = !btn.classList.contains('on');
+  btn.classList.toggle('on', enabled);
+  var key = type==='inter'?'adm-inter':(type==='reward'?'adm-reward':'adm-banner');
+  var input = document.getElementById(key);
+  if(input) input.disabled = !enabled;
+  // Actualizar flag en memoria
+  if(type==='banner')  AD_ENABLED.banner=enabled;
+  if(type==='inter')   AD_ENABLED.interstitial=enabled;
+  if(type==='reward')  AD_ENABLED.rewarded=enabled;
 }
 function clsAdm(){ document.getElementById('admOv').classList.remove('open'); }
 function admBgClick(e){ if(e.target===document.getElementById('admOv')) clsAdm(); }
@@ -979,26 +1068,28 @@ function setAdmStatus(msg,isOk){
 }
 
 function saveAdmConfig(){
-  var newPass=document.getElementById('adm-pass').value.trim();
-  var newApp=document.getElementById('adm-app').value.trim();
-  var newBanner=document.getElementById('adm-banner').value.trim();
-  var newInter=document.getElementById('adm-inter').value.trim();
-  var newReward=document.getElementById('adm-reward').value.trim();
+  var newPass  = document.getElementById('adm-pass').value.trim();
+  var newApp   = document.getElementById('adm-app').value.trim();
+  var newBanner= document.getElementById('adm-banner').value.trim();
+  var newInter = document.getElementById('adm-inter').value.trim();
+  var newReward= document.getElementById('adm-reward').value.trim();
 
-  // Only update if field has value (empty = keep current)
+  // Actualizar contraseña
   if(newPass && newPass.length>=4) ADMIN_PASS=newPass;
+  // Actualizar IDs solo si el campo tiene valor Y el toggle está ON
   if(newApp    && newApp.length>10)    AD_IDS.app=newApp;
-  if(newBanner && newBanner.length>10) AD_IDS.banner=newBanner;
-  if(newInter  && newInter.length>10)  AD_IDS.interstitial=newInter;
-  if(newReward && newReward.length>10) AD_IDS.rewarded=newReward;
+  if(AD_ENABLED.banner       && newBanner && newBanner.length>10) AD_IDS.banner=newBanner;
+  if(AD_ENABLED.interstitial && newInter  && newInter.length>10)  AD_IDS.interstitial=newInter;
+  if(AD_ENABLED.rewarded     && newReward && newReward.length>10) AD_IDS.rewarded=newReward;
 
-  // Persist to localStorage
+  // El botón "Ver anuncio" solo visible si rewarded está ON
+  var rBtn=document.getElementById('rewardAdBtn');
+  if(rBtn) rBtn.style.display=(AD_ENABLED.rewarded&&typeof Android!=='undefined')?'block':'none';
+
   saveLocalConfig();
-  // Tell Android to reinitialize all ads with new IDs
   notifyAndroidAdIds();
-  // Clear password field for security
   document.getElementById('adm-pass').value='';
-  setAdmStatus('✓ Guardado · Los anuncios se recargarán',true);
+  setAdmStatus('✓ Guardado · Anuncios actualizados',true);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1128,7 +1219,7 @@ function triggerGameOver(){
   if(isNew) show('newRecord'); else hide('newRecord');
   // Mostrar botón de anuncio solo si hay Android bridge
   document.getElementById('rewardAdBtn').style.display=
-    (typeof Android!=='undefined')?'block':'none';
+    (AD_ENABLED.rewarded&&typeof Android!=='undefined')?'block':'none';
   show('gameOverScreen');
 }
 function updateGlobalRecord(){
