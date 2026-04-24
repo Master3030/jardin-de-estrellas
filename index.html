@@ -1038,13 +1038,35 @@ function syncTog(type, enabled){
 function toggleAd(type, btn){
   var enabled = !btn.classList.contains('on');
   btn.classList.toggle('on', enabled);
+
+  // Deshabilitar/habilitar el input del ID
   var key = type==='inter'?'adm-inter':(type==='reward'?'adm-reward':'adm-banner');
   var input = document.getElementById(key);
   if(input) input.disabled = !enabled;
+
   // Actualizar flag en memoria
   if(type==='banner')  AD_ENABLED.banner=enabled;
   if(type==='inter')   AD_ENABLED.interstitial=enabled;
   if(type==='reward')  AD_ENABLED.rewarded=enabled;
+
+  // ── EFECTO INMEDIATO ────────────────────────────────────────
+  if(type==='reward'){
+    // Mostrar/ocultar el botón "Ver anuncio" en pantalla de game over
+    var rBtn=document.getElementById('rewardAdBtn');
+    if(rBtn) rBtn.style.display=(enabled&&typeof Android!=='undefined')?'block':'none';
+  }
+
+  // Notificar a Android AHORA para que muestre/oculte inmediatamente
+  // Banner: Android.initAds con ID vacío → oculta el banner nativo
+  // Inter/Reward: Android.initAds con ID vacío → no carga ese tipo
+  notifyAndroidAdIds();
+
+  // Guardar estado en localStorage para persistir
+  saveLocalConfig();
+
+  // Feedback visual en el panel
+  var label = type==='banner'?'Banner':type==='inter'?'Interstitial':'Rewarded';
+  setAdmStatus((enabled?'✓ '+label+' activado':'◉ '+label+' desactivado'), enabled);
 }
 function clsAdm(){ document.getElementById('admOv').classList.remove('open'); }
 function admBgClick(e){ if(e.target===document.getElementById('admOv')) clsAdm(); }
