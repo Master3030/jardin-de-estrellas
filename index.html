@@ -606,6 +606,15 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:none}
 
         <div class="adm-sep"></div>
 
+        <div class="adm-lbl">☁️ JSONBin.io — Sincronización</div>
+        <input class="adm-input" id="adm-bin-id"  type="text" placeholder="Bin ID (de jsonbin.io)">
+        <input class="adm-input" id="adm-api-key" type="text" placeholder="API Key (de jsonbin.io)">
+        <div style="color:rgba(255,255,255,.2);font-size:.65rem;margin-top:2px;margin-bottom:8px;line-height:1.5">
+          Sincroniza la config entre el navegador y la app. Gratis en jsonbin.io
+        </div>
+
+        <div class="adm-sep"></div>
+
         <div class="adm-lbl">🔑 Cambiar contraseña admin</div>
         <input class="adm-input" id="adm-pass" type="password" placeholder="Nueva contraseña (vacío = sin cambios)">
 
@@ -642,72 +651,123 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:none}
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-//  AD IDs — se guardan/cargan desde localStorage
-//  El admin los configura desde el panel oculto
+//  JSONBIN.IO — Configuración sincronizada
+//  PASO 1: Creá cuenta gratis en jsonbin.io
+//  PASO 2: Reemplazá BIN_ID y API_KEY con los tuyos
 // ═══════════════════════════════════════════════════════════════
-var AD_IDS_DEFAULT={
+var JSONBIN_BIN_ID = '69ead78a36566621a8e6aab5';
+var JSONBIN_ACCESS_KEY= '$2a$10$szLMqt2q8NQbsVgsINHZ4umLXY5qcF6YTsgbYpm/YEpSI6GJ0FrAS'; // Leer
+var JSONBIN_MASTER_KEY= '$2a$10$BT.cEHFdFIeSoZLGjEeyyexjCFPssFLRK6775vAsGQ6IZdz1T60mu'; // Escribir
+var JSONBIN_API_KEY = JSONBIN_ACCESS_KEY; // alias
+var JSONBIN_URL    = 'https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID;
+
+// Valores por defecto (se sobreescriben con lo que venga de JSONBin)
+var AD_IDS={
   app:         'ca-app-pub-3940256099942544~3347511713',
   banner:      'ca-app-pub-3940256099942544/6300978111',
   interstitial:'ca-app-pub-3940256099942544/1033173712',
   rewarded:    'ca-app-pub-3940256099942544/5224354917'
 };
+var ADMIN_PASS  = 'jardin2025';
+var AD_ENABLED  = {banner:true, interstitial:true, rewarded:true};
+var _cfgLoaded  = false;
 
-var AD_IDS=AD_IDS_DEFAULT;
-var ADMIN_PASS='jardin2025';
-
-// Flags de activación — por defecto todos ON
-var AD_ENABLED={banner:true, interstitial:true, rewarded:true};
-
+// ── Cargar config desde JSONBin (al iniciar) ──────────────────
 function loadLocalConfig(){
+  // 1. Primero aplicar lo que hay en localStorage (sin esperar red)
+  _applyLocalStorage();
+  // 2. Luego sincronizar con JSONBin (puede tardar un poco)
+  _loadFromJsonBin();
+}
+
+function _applyLocalStorage(){
   try{
-    var raw=localStorage.getItem('jes_cfg')||sessionStorage.getItem('jes_cfg');
+    var raw=localStorage.getItem('jes_cfg');
     if(raw){
       var cfg=JSON.parse(raw);
-      if(cfg.adminPassword && cfg.adminPassword.length>0) ADMIN_PASS=cfg.adminPassword;
-      if(cfg.adIds){
-        if(cfg.adIds.app          && cfg.adIds.app.length>0)          AD_IDS.app=cfg.adIds.app;
-        if(cfg.adIds.banner       && cfg.adIds.banner.length>0)       AD_IDS.banner=cfg.adIds.banner;
-        if(cfg.adIds.interstitial && cfg.adIds.interstitial.length>0) AD_IDS.interstitial=cfg.adIds.interstitial;
-        if(cfg.adIds.rewarded     && cfg.adIds.rewarded.length>0)     AD_IDS.rewarded=cfg.adIds.rewarded;
-      }
-      if(cfg.adEnabled){
-        if(typeof cfg.adEnabled.banner      !=='undefined') AD_ENABLED.banner      =cfg.adEnabled.banner;
-        if(typeof cfg.adEnabled.interstitial!=='undefined') AD_ENABLED.interstitial=cfg.adEnabled.interstitial;
-        if(typeof cfg.adEnabled.rewarded    !=='undefined') AD_ENABLED.rewarded    =cfg.adEnabled.rewarded;
-      }
+      _applyCfg(cfg);
     }
-  }catch(e){ console.log('loadLocalConfig error:',e); }
+  }catch(e){}
   notifyAndroidAdIds();
 }
 
+function _loadFromJsonBin(){
+  if(JSONBIN_BIN_ID==='REEMPLAZA_CON_TU_BIN_ID') return; // no configurado aún
+  fetch(JSONBIN_URL+'/latest',{
+    headers:{
+      'X-Access-Key': JSONBIN_ACCESS_KEY,
+      'X-Bin-Meta': 'false'
+    }
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    _applyCfg(data);
+    // Guardar en localStorage como caché offline
+    try{ localStorage.setItem('jes_cfg', JSON.stringify(data)); }catch(e){}
+    _cfgLoaded=true;
+    // Notificar a Android con config actualizada
+    notifyAndroidAdIds();
+  })
+  .catch(function(e){
+    console.log('JSONBin fetch error (usando local):', e);
+  });
+}
+
+function _applyCfg(cfg){
+  if(!cfg) return;
+  if(cfg.adminPassword && cfg.adminPassword.length>0) ADMIN_PASS=cfg.adminPassword;
+  if(cfg.adIds){
+    if(cfg.adIds.app          ) AD_IDS.app          =cfg.adIds.app;
+    if(cfg.adIds.banner       ) AD_IDS.banner        =cfg.adIds.banner;
+    if(cfg.adIds.interstitial ) AD_IDS.interstitial  =cfg.adIds.interstitial;
+    if(cfg.adIds.rewarded     ) AD_IDS.rewarded      =cfg.adIds.rewarded;
+  }
+  if(cfg.adEnabled){
+    if(typeof cfg.adEnabled.banner      !=='undefined') AD_ENABLED.banner      =cfg.adEnabled.banner;
+    if(typeof cfg.adEnabled.interstitial!=='undefined') AD_ENABLED.interstitial=cfg.adEnabled.interstitial;
+    if(typeof cfg.adEnabled.rewarded    !=='undefined') AD_ENABLED.rewarded    =cfg.adEnabled.rewarded;
+  }
+}
+
+// ── Guardar config en JSONBin + localStorage ──────────────────
 function saveLocalConfig(){
-  try{
-    var cfg={
-      adminPassword:ADMIN_PASS,
-      adIds:{
-        app:         AD_IDS.app,
-        banner:      AD_IDS.banner,
-        interstitial:AD_IDS.interstitial,
-        rewarded:    AD_IDS.rewarded
+  var cfg={
+    adminPassword: ADMIN_PASS,
+    adIds:{
+      app:          AD_IDS.app,
+      banner:       AD_IDS.banner,
+      interstitial: AD_IDS.interstitial,
+      rewarded:     AD_IDS.rewarded
+    },
+    adEnabled:{
+      banner:       AD_ENABLED.banner,
+      interstitial: AD_ENABLED.interstitial,
+      rewarded:     AD_ENABLED.rewarded
+    }
+  };
+  // Guardar localmente siempre (funciona offline)
+  try{ localStorage.setItem('jes_cfg', JSON.stringify(cfg)); }catch(e){}
+  // Guardar en JSONBin si está configurado
+  if(JSONBIN_BIN_ID!=='REEMPLAZA_CON_TU_BIN_ID'){
+    fetch(JSONBIN_URL,{
+      method:'PUT',
+      headers:{
+        'Content-Type':'application/json',
+        'X-Master-Key': JSONBIN_MASTER_KEY
       },
-      adEnabled:{
-        banner:      AD_ENABLED.banner,
-        interstitial:AD_ENABLED.interstitial,
-        rewarded:    AD_ENABLED.rewarded
-      }
-    };
-    localStorage.setItem('jes_cfg', JSON.stringify(cfg));
-    sessionStorage.setItem('jes_cfg', JSON.stringify(cfg));
-  }catch(e){}
+      body: JSON.stringify(cfg)
+    })
+    .then(function(){ console.log('JSONBin guardado OK'); })
+    .catch(function(e){ console.log('JSONBin save error:', e); });
+  }
 }
 
 function notifyAndroidAdIds(){
   if(typeof Android!=='undefined'){
     try{
-      // Si un tipo está desactivado, enviar '' → Android no carga ese anuncio
-      var b = AD_ENABLED.banner      ? AD_IDS.banner       : '';
-      var i = AD_ENABLED.interstitial? AD_IDS.interstitial  : '';
-      var r = AD_ENABLED.rewarded    ? AD_IDS.rewarded      : '';
+      var b = AD_ENABLED.banner      ? AD_IDS.banner      : '';
+      var i = AD_ENABLED.interstitial? AD_IDS.interstitial : '';
+      var r = AD_ENABLED.rewarded    ? AD_IDS.rewarded     : '';
       Android.initAds(AD_IDS.app, b, i, r);
     }catch(e){}
   }
@@ -1017,7 +1077,15 @@ function oAdm(){
   document.getElementById('adm-inter').value  = AD_IDS.interstitial||'';
   document.getElementById('adm-reward').value = AD_IDS.rewarded||'';
   document.getElementById('adm-pass').value   = '';
-  document.getElementById('admStatus').textContent = '';
+  // Mostrar estado de sincronización
+  var cfgOk = JSONBIN_BIN_ID!=='REEMPLAZA_CON_TU_BIN_ID';
+  document.getElementById('admStatus').textContent = cfgOk
+    ? (_cfgLoaded?'☁️ Sincronizado con JSONBin':'☁️ Conectando a JSONBin...')
+    : '⚠ JSONBin no configurado — funciona solo localmente';
+  document.getElementById('admStatus').className = 'adm-status '+(cfgOk?'ok':'err');
+  // Poblar campos JSONBin
+  document.getElementById('adm-bin-id').value  = JSONBIN_BIN_ID!=='REEMPLAZA_CON_TU_BIN_ID'?JSONBIN_BIN_ID:'';
+  document.getElementById('adm-api-key').value = JSONBIN_API_KEY!=='REEMPLAZA_CON_TU_API_KEY'?JSONBIN_API_KEY:'';
   // Sincronizar toggles con estado actual
   syncTog('banner',  AD_ENABLED.banner);
   syncTog('inter',   AD_ENABLED.interstitial);
@@ -1095,6 +1163,12 @@ function saveAdmConfig(){
   var newBanner= document.getElementById('adm-banner').value.trim();
   var newInter = document.getElementById('adm-inter').value.trim();
   var newReward= document.getElementById('adm-reward').value.trim();
+  var newBinId = document.getElementById('adm-bin-id').value.trim();
+  var newApiKey= document.getElementById('adm-api-key').value.trim();
+
+  // Actualizar JSONBin credentials si se ingresaron
+  // Los campos de JSONBin son solo de referencia — credenciales ya están en el código
+  // Solo actualizar si el admin pega nuevas claves manualmente
 
   // Actualizar contraseña
   if(newPass && newPass.length>=4) ADMIN_PASS=newPass;
@@ -1750,7 +1824,16 @@ animateBg();
 updateHSDisplay();
 ctx.fillStyle='#0f0728';
 ctx.fillRect(0,0,W||300,H||600);
-// Cargar config guardada y notificar IDs a Android
+// Recuperar credenciales JSONBin si estaban guardadas
+(function(){
+  try{
+    var bid = localStorage.getItem('jes_bin_id');
+    var akey= localStorage.getItem('jes_api_key');
+    if(bid  && bid.length>5)  { JSONBIN_BIN_ID=bid;  JSONBIN_URL='https://api.jsonbin.io/v3/b/'+bid; }
+    if(akey && akey.length>5) { JSONBIN_API_KEY=akey; }
+  }catch(e){}
+})();
+// Cargar config y notificar IDs a Android
 loadLocalConfig();
 // Contar sesión
 incrementSessions();
