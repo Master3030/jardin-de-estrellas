@@ -681,15 +681,20 @@ var ADMIN_PASS  = 'jardin2025';
 var AD_ENABLED  = {banner:true, interstitial:true, rewarded:true};
 var _cfgLoaded  = false;
 
-// ── Cargar config — patrón Sintonía ──────────────────────────
-// 1. Lee config.json del mismo repositorio GitHub (igual que stations.json en Sintonía)
-// 2. Fallback a localStorage si no hay red
-// 3. JSONBin solo para guardar desde el admin
+// ── Cargar config — JSONBin como fuente única ────────────────
+// Orden de prioridad:
+// 1. localStorage (instantáneo, sin red) → para no mostrar pantalla en blanco
+// 2. JSONBin (nube) → siempre actualizado, se guarda automáticamente desde el admin
+// 3. config.json en GitHub → solo si JSONBin falla (respaldo)
+// ─────────────────────────────────────────────────────────────
+// ✅ AUTOMÁTICO: cuando el admin guarda → JSONBin se actualiza solo
+// ✅ AUTOMÁTICO: próxima apertura de la app → lee JSONBin → config al día
+// ❌ MANUAL: config.json en GitHub (solo respaldo, no es necesario tocar)
 function loadLocalConfig(){
-  // Aplicar localStorage inmediatamente (sin esperar red)
+  // 1. Aplicar localStorage al instante (evita pantalla en blanco)
   _applyLocalStorage();
-  // Luego leer config.json de GitHub (mismo dominio, sin CORS, siempre actualizado)
-  _loadFromGitHub();
+  // 2. Luego JSONBin (fuente de verdad, siempre actualizado)
+  _loadFromJsonBin();
 }
 
 function _applyLocalStorage(){
@@ -703,31 +708,6 @@ function _applyLocalStorage(){
   notifyAndroidAdIds();
 }
 
-function _loadFromGitHub(){
-  // config.json está en el mismo repositorio — mismo dominio, sin CORS
-  // timestamp para evitar caché del navegador
-  var url='./config.json?v='+Date.now();
-  fetch(url)
-  .then(function(r){
-    if(!r.ok) throw new Error('config.json no encontrado');
-    return r.json();
-  })
-  .then(function(data){
-    _applyCfg(data);
-    // Guardar en localStorage como caché offline
-    try{ localStorage.setItem('jes_cfg', JSON.stringify(data)); }catch(e){}
-    _cfgLoaded=true;
-    // Notificar a Android con la config más actualizada
-    notifyAndroidAdIds();
-    console.log('config.json cargado OK');
-  })
-  .catch(function(e){
-    console.log('config.json error (usando local):', e);
-    // Si falla GitHub, intentar JSONBin como fallback
-    _loadFromJsonBin();
-  });
-}
-
 function _loadFromJsonBin(){
   if(JSONBIN_BIN_ID==='REEMPLAZA_CON_TU_BIN_ID') return;
   fetch(JSONBIN_URL+'/latest',{
@@ -736,14 +716,41 @@ function _loadFromJsonBin(){
       'X-Bin-Meta': 'false'
     }
   })
-  .then(function(r){ return r.json(); })
+  .then(function(r){
+    if(!r.ok) throw new Error('JSONBin error: '+r.status);
+    return r.json();
+  })
+  .then(function(data){
+    _applyCfg(data);
+    // Guardar como caché offline para próxima apertura sin red
+    try{ localStorage.setItem('jes_cfg', JSON.stringify(data)); }catch(e){}
+    _cfgLoaded=true;
+    notifyAndroidAdIds();
+    console.log('✅ Config cargada desde JSONBin');
+  })
+  .catch(function(e){
+    console.log('JSONBin error, probando config.json:', e);
+    // Fallback: config.json en GitHub (respaldo manual)
+    _loadFromGitHub();
+  });
+}
+
+function _loadFromGitHub(){
+  fetch('./config.json?v='+Date.now())
+  .then(function(r){
+    if(!r.ok) throw new Error('config.json no encontrado');
+    return r.json();
+  })
   .then(function(data){
     _applyCfg(data);
     try{ localStorage.setItem('jes_cfg', JSON.stringify(data)); }catch(e){}
     _cfgLoaded=true;
     notifyAndroidAdIds();
+    console.log('✅ Config cargada desde config.json (fallback)');
   })
-  .catch(function(e){ console.log('JSONBin fallback error:', e); });
+  .catch(function(e){
+    console.log('Usando localStorage como último recurso:', e);
+  });
 }
 
 function _applyCfg(cfg){
@@ -1025,8 +1032,12 @@ var SCORE_KEYS=[
   {k:'blitz_kids',    l:'Blitz 7-9'},
   {k:'blitz_junior',  l:'Blitz 10-12'},
   {k:'blitz_teen',    l:'Blitz 13-16'},
-  {k:'zen_kids',      l:'Zen'},
-  {k:'ultra_kids',    l:'Ultra'},
+  {k:'zen_kids',      l:'Zen 7-9'},
+  {k:'zen_junior',    l:'Zen 10-12'},
+  {k:'zen_teen',      l:'Zen 13-16'},
+  {k:'ultra_kids',    l:'Ultra 7-9'},
+  {k:'ultra_junior',  l:'Ultra 10-12'},
+  {k:'ultra_teen',    l:'Ultra 13-16'},
 ];
 function renderScores(){
   var wrap=document.getElementById('hsWrap');
