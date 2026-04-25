@@ -630,6 +630,15 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:none}
 
         <button class="adm-save" onclick="saveAdmConfig()">💾 Guardar configuración</button>
         <div class="adm-status" id="admStatus"></div>
+        <button class="adm-save" onclick="generateConfigJson()"
+          style="margin-top:8px;background:linear-gradient(135deg,#0e7490,#0891b2)">
+          📋 Copiar config.json para GitHub
+        </button>
+        <textarea id="cfgJsonOutput" readonly
+          style="display:none;width:100%;margin-top:8px;background:rgba(0,0,0,.4);
+          border:1px solid rgba(255,255,255,.15);border-radius:10px;color:#4ade80;
+          font-size:.65rem;padding:10px;resize:none;height:120px;font-family:monospace">
+        </textarea>
       </div>
     </div>
   </div>
@@ -672,12 +681,15 @@ var ADMIN_PASS  = 'jardin2025';
 var AD_ENABLED  = {banner:true, interstitial:true, rewarded:true};
 var _cfgLoaded  = false;
 
-// ── Cargar config desde JSONBin (al iniciar) ──────────────────
+// ── Cargar config — patrón Sintonía ──────────────────────────
+// 1. Lee config.json del mismo repositorio GitHub (igual que stations.json en Sintonía)
+// 2. Fallback a localStorage si no hay red
+// 3. JSONBin solo para guardar desde el admin
 function loadLocalConfig(){
-  // 1. Primero aplicar lo que hay en localStorage (sin esperar red)
+  // Aplicar localStorage inmediatamente (sin esperar red)
   _applyLocalStorage();
-  // 2. Luego sincronizar con JSONBin (puede tardar un poco)
-  _loadFromJsonBin();
+  // Luego leer config.json de GitHub (mismo dominio, sin CORS, siempre actualizado)
+  _loadFromGitHub();
 }
 
 function _applyLocalStorage(){
@@ -691,8 +703,33 @@ function _applyLocalStorage(){
   notifyAndroidAdIds();
 }
 
+function _loadFromGitHub(){
+  // config.json está en el mismo repositorio — mismo dominio, sin CORS
+  // timestamp para evitar caché del navegador
+  var url='./config.json?v='+Date.now();
+  fetch(url)
+  .then(function(r){
+    if(!r.ok) throw new Error('config.json no encontrado');
+    return r.json();
+  })
+  .then(function(data){
+    _applyCfg(data);
+    // Guardar en localStorage como caché offline
+    try{ localStorage.setItem('jes_cfg', JSON.stringify(data)); }catch(e){}
+    _cfgLoaded=true;
+    // Notificar a Android con la config más actualizada
+    notifyAndroidAdIds();
+    console.log('config.json cargado OK');
+  })
+  .catch(function(e){
+    console.log('config.json error (usando local):', e);
+    // Si falla GitHub, intentar JSONBin como fallback
+    _loadFromJsonBin();
+  });
+}
+
 function _loadFromJsonBin(){
-  if(JSONBIN_BIN_ID==='REEMPLAZA_CON_TU_BIN_ID') return; // no configurado aún
+  if(JSONBIN_BIN_ID==='REEMPLAZA_CON_TU_BIN_ID') return;
   fetch(JSONBIN_URL+'/latest',{
     headers:{
       'X-Access-Key': JSONBIN_ACCESS_KEY,
@@ -702,15 +739,11 @@ function _loadFromJsonBin(){
   .then(function(r){ return r.json(); })
   .then(function(data){
     _applyCfg(data);
-    // Guardar en localStorage como caché offline
     try{ localStorage.setItem('jes_cfg', JSON.stringify(data)); }catch(e){}
     _cfgLoaded=true;
-    // Notificar a Android con config actualizada
     notifyAndroidAdIds();
   })
-  .catch(function(e){
-    console.log('JSONBin fetch error (usando local):', e);
-  });
+  .catch(function(e){ console.log('JSONBin fallback error:', e); });
 }
 
 function _applyCfg(cfg){
@@ -747,7 +780,7 @@ function saveLocalConfig(){
   };
   // Guardar localmente siempre (funciona offline)
   try{ localStorage.setItem('jes_cfg', JSON.stringify(cfg)); }catch(e){}
-  // Guardar en JSONBin si está configurado
+  // Guardar en JSONBin
   if(JSONBIN_BIN_ID!=='REEMPLAZA_CON_TU_BIN_ID'){
     fetch(JSONBIN_URL,{
       method:'PUT',
@@ -757,9 +790,23 @@ function saveLocalConfig(){
       },
       body: JSON.stringify(cfg)
     })
-    .then(function(){ console.log('JSONBin guardado OK'); })
+    .then(function(){
+      console.log('JSONBin guardado OK');
+      // También generar el contenido para config.json
+      _updateConfigJson(cfg);
+    })
     .catch(function(e){ console.log('JSONBin save error:', e); });
+  } else {
+    _updateConfigJson(cfg);
   }
+}
+
+function _updateConfigJson(cfg){
+  // Muestra el JSON listo para copiar a config.json en GitHub
+  var json=JSON.stringify(cfg, null, 2);
+  console.log('== config.json actualizado ==\n'+json);
+  // Guardar referencia del último config generado
+  try{ localStorage.setItem('jes_cfg_generated', json); }catch(e){}
 }
 
 function notifyAndroidAdIds(){
@@ -1185,12 +1232,45 @@ function saveAdmConfig(){
   saveLocalConfig();
   notifyAndroidAdIds();
   document.getElementById('adm-pass').value='';
-  setAdmStatus('✓ Guardado · Anuncios actualizados',true);
+  setAdmStatus('✓ Guardado · Actualizando config.json...',true);
+  // Recordar al admin que también debe actualizar config.json en GitHub
+  setTimeout(function(){
+    var el=document.getElementById('admStatus');
+    if(el) el.textContent='⬆️ Ahora actualizá config.json en GitHub';
+  },2500);
 }
 
 // ═══════════════════════════════════════════════════════════════
 //  SESSION COUNTER
 // ═══════════════════════════════════════════════════════════════
+function generateConfigJson(){
+  var cfg={
+    adminPassword: ADMIN_PASS,
+    adIds:{
+      app:          AD_IDS.app,
+      banner:       AD_IDS.banner,
+      interstitial: AD_IDS.interstitial,
+      rewarded:     AD_IDS.rewarded
+    },
+    adEnabled:{
+      banner:       AD_ENABLED.banner,
+      interstitial: AD_ENABLED.interstitial,
+      rewarded:     AD_ENABLED.rewarded
+    }
+  };
+  var json=JSON.stringify(cfg, null, 2);
+  var ta=document.getElementById('cfgJsonOutput');
+  ta.style.display='block';
+  ta.value=json;
+  ta.select();
+  try{
+    document.execCommand('copy');
+    setAdmStatus('✅ Copiado. Pegá en config.json de GitHub',true);
+  }catch(e){
+    setAdmStatus('📋 Seleccioná el texto y copialo manualmente',true);
+  }
+}
+
 function incrementSessions(){
   try{
     var s=parseInt(localStorage.getItem('jes_sessions')||'0');
