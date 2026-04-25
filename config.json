@@ -9,6 +9,6 @@
   "adEnabled": {
     "banner": false,
     "interstitial": false,
-    "rewarded": false
+    "rewarded": true
   }
 }
