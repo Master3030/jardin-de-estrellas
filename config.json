@@ -7,7 +7,7 @@
     "rewarded": "ca-app-pub-3940256099942544/5224354917"
   },
   "adEnabled": {
-    "banner": true,
+    "banner": false,
     "interstitial": true,
     "rewarded": true
   }
