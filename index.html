@@ -760,6 +760,9 @@ function _applyCfg(cfg){
     if(typeof cfg.adEnabled.interstitial!=='undefined') AD_ENABLED.interstitial=cfg.adEnabled.interstitial;
     if(typeof cfg.adEnabled.rewarded    !=='undefined') AD_ENABLED.rewarded    =cfg.adEnabled.rewarded;
   }
+  // Aplicar visibilidad del botón rewarded inmediatamente
+  var rBtn=document.getElementById('rewardAdBtn');
+  if(rBtn) rBtn.style.display='none'; // siempre oculto hasta game over con rewarded ON
 }
 
 // ── Guardar config en JSONBin + localStorage ──────────────────
@@ -1154,7 +1157,7 @@ function toggleAd(type, btn){
   var enabled = !btn.classList.contains('on');
   btn.classList.toggle('on', enabled);
 
-  // Deshabilitar/habilitar el input del ID
+  // Habilitar/deshabilitar el input del ID visualmente
   var key = type==='inter'?'adm-inter':(type==='reward'?'adm-reward':'adm-banner');
   var input = document.getElementById(key);
   if(input) input.disabled = !enabled;
@@ -1164,22 +1167,50 @@ function toggleAd(type, btn){
   if(type==='inter')   AD_ENABLED.interstitial=enabled;
   if(type==='reward')  AD_ENABLED.rewarded=enabled;
 
-  // ── EFECTO INMEDIATO ────────────────────────────────────────
+  // ── EFECTO INMEDIATO SEGÚN TIPO ─────────────────────────────
+  if(type==='banner'){
+    // Android muestra/oculta el contenedor nativo del banner
+    if(typeof Android!=='undefined'){
+      try{
+        var b = enabled ? AD_IDS.banner : '';
+        Android.initAds(AD_IDS.app, b, 
+          AD_ENABLED.interstitial ? AD_IDS.interstitial : '',
+          AD_ENABLED.rewarded     ? AD_IDS.rewarded     : '');
+      }catch(e){}
+    }
+  }
+
+  if(type==='inter'){
+    // Android para/arranca la carga del interstitial
+    if(typeof Android!=='undefined'){
+      try{
+        Android.initAds(AD_IDS.app,
+          AD_ENABLED.banner       ? AD_IDS.banner       : '',
+          enabled                 ? AD_IDS.interstitial  : '',
+          AD_ENABLED.rewarded     ? AD_IDS.rewarded      : '');
+      }catch(e){}
+    }
+  }
+
   if(type==='reward'){
     // Mostrar/ocultar el botón "Ver anuncio" en pantalla de game over
     var rBtn=document.getElementById('rewardAdBtn');
     if(rBtn) rBtn.style.display=(enabled&&typeof Android!=='undefined')?'block':'none';
+    // Android para/arranca la carga del rewarded
+    if(typeof Android!=='undefined'){
+      try{
+        Android.initAds(AD_IDS.app,
+          AD_ENABLED.banner       ? AD_IDS.banner       : '',
+          AD_ENABLED.interstitial ? AD_IDS.interstitial  : '',
+          enabled                 ? AD_IDS.rewarded      : '');
+      }catch(e){}
+    }
   }
 
-  // Notificar a Android AHORA para que muestre/oculte inmediatamente
-  // Banner: Android.initAds con ID vacío → oculta el banner nativo
-  // Inter/Reward: Android.initAds con ID vacío → no carga ese tipo
-  notifyAndroidAdIds();
-
-  // Guardar estado en localStorage para persistir
+  // Guardar en localStorage y JSONBin
   saveLocalConfig();
 
-  // Feedback visual en el panel
+  // Feedback
   var label = type==='banner'?'Banner':type==='inter'?'Interstitial':'Rewarded';
   setAdmStatus((enabled?'✓ '+label+' activado':'◉ '+label+' desactivado'), enabled);
 }
