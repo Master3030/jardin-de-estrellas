@@ -590,17 +590,34 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:none}
       <div class="info-card">
         <h3>🎮 Modos de juego</h3>
         <p>🍎 <b style="color:#e2d9f3">Clásico</b> — Sin límite de tiempo<br>
-        ⚡ <b style="color:#e2d9f3">Blitz</b> — 60 segundos<br>
-        🌊 <b style="color:#e2d9f3">Zen</b> — Sin vidas<br>
-        💎 <b style="color:#e2d9f3">Ultra</b> — Dificultad máxima</p>
+        ⚡ <b style="color:#e2d9f3">Blitz</b> — 60 segundos de caos<br>
+        🌊 <b style="color:#e2d9f3">Zen</b> — Sin vidas, modo relajado<br>
+        💎 <b style="color:#e2d9f3">Ultra</b> — Dificultad extrema<br>
+        ♾️ <b style="color:#e2d9f3">Infinito</b> — Sin fin, velocidad creciente<br>
+        🏆 <b style="color:#e2d9f3">Desafío</b> — 90 segundos, modo diario</p>
+      </div>
+      <div class="info-card">
+        <h3>🌟 Niveles</h3>
+        <p>11 niveles progresivos desde <b style="color:#e2d9f3">Cielo Azul</b> hasta <b style="color:#e2d9f3">Singularidad ∞</b>. Cada nivel aumenta velocidad, frecuencia y dificultad.</p>
       </div>
       <div class="info-card">
         <h3>⭐ Poderes especiales</h3>
-        <p>🛡️ Escudo · 🧲 Imán · ⏰ Tiempo extra · 🌀 Cámara lenta · ❤️ Vida extra</p>
+        <p>🛡️ Escudo · 🧲 Imán · ⏰ Tiempo extra · 🌀 Cámara lenta · ❤️ Vida extra · 🍄 x2 Puntos · 🌙 Superpoder</p>
+      </div>
+      <div class="info-card">
+        <h3>🎯 Items especiales</h3>
+        <p>🍄 Hongo — duplica puntos 8s<br>
+        🎯 Diana — vale 3 puntos<br>
+        💰 Moneda — vale 15 puntos<br>
+        🌙 Luna — escudo + cámara lenta</p>
+      </div>
+      <div class="info-card">
+        <h3>🥇 Logros</h3>
+        <p>16 logros desbloqueables. Combiná modos, grupos de edad y estrategias para coleccionarlos todos.</p>
       </div>
 
       <div style="color:rgba(255,255,255,.18);font-size:.68rem;text-align:center;margin-top:16px;line-height:2">
-        Hecho con ❤️ en Paraguay
+        Jardín de Estrellas v2.0<br>Hecho con ❤️ en Paraguay
       </div>
     </div>
   </div>
@@ -908,14 +925,14 @@ const LEVELS=[
   {name:'Cielo Azul',        bg:['#0a1628','#0d2457','#1a3a8f'], items:['🍎','🍊','🍋','🍇','🍓'],                          speed:2.2, freq:1750, scoreNeeded:80,   bombChanceExtra:0,    multiShot:0},
   {name:'Atardecer Mágico',  bg:['#1a0a0a','#6b2c1a','#c2410c'], items:['🍎','🍊','🍋','🍇','🍓','🌟'],                    speed:3.0, freq:1550, scoreNeeded:200,  bombChanceExtra:.02,  multiShot:0},
   {name:'Jardín Verde',      bg:['#052e16','#14532d','#166534'],  items:['🍎','🍊','🍋','🍇','🍓','🌟','🍬'],              speed:3.9, freq:1350, scoreNeeded:380,  bombChanceExtra:.03,  multiShot:1},
-  {name:'Campo Morado',      bg:['#1e1b4b','#3730a3','#6d28d9'], items:['🍎','🍊','🍋','🍇','🍓','🌟','🍬','💎'],        speed:5.0, freq:1150, scoreNeeded:620,  bombChanceExtra:.04,  multiShot:1},
-  {name:'Jardín Mágico',     bg:['#0c0a1e','#1e1b4b','#4c1d95'], items:['🍎','🍊','🍋','🍇','🍓','🌟','🍬','💎','🔮'],  speed:6.2, freq:980,  scoreNeeded:950,  bombChanceExtra:.05,  multiShot:2},
-  {name:'Dimensión Cósmica', bg:['#000005','#0f0728','#1e0954'], items:['🍎','🍊','🍋','🍇','🍓','🌟','🍬','💎','🔮','🌈'],speed:7.8,freq:820,  scoreNeeded:1400, bombChanceExtra:.06,  multiShot:2},
-  {name:'El Caos Estelar',   bg:['#050505','#0f172a','#1e293b'], items:['🍎','🍊','🍋','🍇','🍓','🌟','🍬','💎','🔮','🌈','⚡'],speed:9.5,freq:680,scoreNeeded:2200,bombChanceExtra:.08,multiShot:3},
-  {name:'Galaxia Oscura',    bg:['#000000','#0d0d1a','#1a0033'], items:['🍎','🍊','🍋','🍇','🍓','🌟','🍬','💎','🔮','🌈','⚡','🍄'],speed:11.5,freq:560,scoreNeeded:3200,bombChanceExtra:.10,multiShot:4},
-  {name:'Dimensión Espejo',  bg:['#0a001a','#1a0040','#2d0070'], items:['🍎','🍊','🍋','🍇','🍓','🌟','🍬','💎','🔮','🌈','⚡','🍄','🎯'],speed:14.0,freq:450,scoreNeeded:4800,bombChanceExtra:.12,multiShot:5},
-  {name:'Núcleo Estelar',    bg:['#1a0500','#3d0f00','#7c1900'], items:['🍎','🍊','🍋','🍇','🍓','🌟','🍬','💎','🔮','🌈','⚡','🍄','🎯','💰'],speed:17.0,freq:350,scoreNeeded:7000,bombChanceExtra:.14,multiShot:6},
-  {name:'Singularidad ∞',    bg:['#000000','#050505','#0a0a0a'], items:['🍎','🍊','🍋','🍇','🍓','🌟','🍬','💎','🔮','🌈','⚡','🍄','🎯','💰','🌙'],speed:21.0,freq:260,scoreNeeded:Infinity,bombChanceExtra:.18,multiShot:8},
+  {name:'Campo Morado',      bg:['#1e1b4b','#3730a3','#6d28d9'], items:['🍎','🍊','🍋','🍇','🍓','🌟','🍬','💎'],        speed:4.8, freq:1200, scoreNeeded:620,  bombChanceExtra:.04,  multiShot:1},
+  {name:'Jardín Mágico',     bg:['#0c0a1e','#1e1b4b','#4c1d95'], items:['🍎','🍊','🍋','🍇','🍓','🌟','🍬','💎','🔮'],  speed:5.8, freq:1050, scoreNeeded:950,  bombChanceExtra:.05,  multiShot:2},
+  {name:'Dimensión Cósmica', bg:['#000005','#0f0728','#1e0954'], items:['🍎','🍊','🍋','🍇','🍓','🌟','🍬','💎','🔮','🌈'],speed:7.2,freq:880,  scoreNeeded:1400, bombChanceExtra:.06,  multiShot:2},
+  {name:'El Caos Estelar',   bg:['#050505','#0f172a','#1e293b'], items:['🍎','🍊','🍋','🍇','🍓','🌟','🍬','💎','🔮','🌈','⚡'],speed:8.5,freq:750,scoreNeeded:2200,bombChanceExtra:.08,multiShot:3},
+  {name:'Galaxia Oscura',    bg:['#000000','#0d0d1a','#1a0033'], items:['🍎','🍊','🍋','🍇','🍓','🌟','🍬','💎','🔮','🌈','⚡','🍄'],speed:10.5,freq:620,scoreNeeded:3200,bombChanceExtra:.09,multiShot:3},
+  {name:'Dimensión Espejo',  bg:['#0a001a','#1a0040','#2d0070'], items:['🍎','🍊','🍋','🍇','🍓','🌟','🍬','💎','🔮','🌈','⚡','🍄','🎯'],speed:12.5,freq:500,scoreNeeded:4800,bombChanceExtra:.10,multiShot:3},
+  {name:'Núcleo Estelar',    bg:['#1a0500','#3d0f00','#7c1900'], items:['🍎','🍊','🍋','🍇','🍓','🌟','🍬','💎','🔮','🌈','⚡','🍄','🎯','💰'],speed:14.5,freq:400,scoreNeeded:7000,bombChanceExtra:.12,multiShot:3},
+  {name:'Singularidad ∞',    bg:['#000000','#050505','#0a0a0a'], items:['🍎','🍊','🍋','🍇','🍓','🌟','🍬','💎','🔮','🌈','⚡','🍄','🎯','💰','🌙'],speed:17.0,freq:320,scoreNeeded:Infinity,bombChanceExtra:.15,multiShot:3},
 ];
 const ITEM_VALUES={'🍎':1,'🍊':1,'🍋':1,'🍇':1,'🍓':1,'🌟':3,'🍬':2,'💎':5,'🔮':4,'🌈':8,'⚡':6,'🍄':2,'🎯':3,'💰':15,'🌙':4};
 const ITEM_SIZES= {'🍎':1,'🍊':1,'🍋':1,'🍇':1,'🍓':1,'🌟':1.3,'🍬':.9,'💎':1.2,'🔮':1.1,'🌈':1.5,'⚡':1.3,'🍄':1.2,'🎯':1.1,'💰':1.4,'🌙':1.5};
@@ -1911,13 +1928,19 @@ function gameLoop(now){
   screenShake*=.82;
   var lvlData=LEVELS[Math.min(level-1,LEVELS.length-1)];
   var baseInterval=slowActive?lvlData.freq*1.65:lvlData.freq;
-  if(now-lastItemTime>baseInterval){
+  // Cap de items en pantalla para mantener fluidez
+  var maxItems=Math.min(12+level*2, 35);
+  if(now-lastItemTime>baseInterval && items.length<maxItems){
     spawnItem(); lastItemTime=now;
-    if(level>=3){ setTimeout(spawnItem,190); }
-    if(level>=4){ setTimeout(spawnItem,370); }
-    if(level>=5){ setTimeout(spawnItem,560); if(Math.random()<.4) setTimeout(spawnItem,750); }
-    if(level>=6){ setTimeout(spawnItem,120); setTimeout(spawnItem,300); setTimeout(spawnItem,480); }
-    if(level>=7){ setTimeout(spawnItem,80); setTimeout(spawnItem,200); setTimeout(spawnItem,400); setTimeout(spawnItem,620); }
+    // Limitar items simultáneos para mantener fluidez
+    var lvlData2=LEVELS[Math.min(level-1,LEVELS.length-1)];
+    var shots=Math.min(lvlData2.multiShot||0, 3); // máximo 3 extras
+    if(level>=3 && shots>=1){ setTimeout(spawnItem,220); }
+    if(level>=4 && shots>=2){ setTimeout(spawnItem,420); }
+    if(level>=5 && shots>=3){ setTimeout(spawnItem,600); }
+    // Nivel 6+ agrega uno más solo si hay pocos items en pantalla
+    if(level>=6 && items.length<18){ setTimeout(spawnItem,150); }
+    if(level>=7 && items.length<22){ setTimeout(spawnItem,300); }
   }
   var puInterval=Math.max(4500-level*350,1800);
   if(now-lastPowerupTime>puInterval){ lastPowerupTime=now; spawnItem(); }
@@ -1988,7 +2011,7 @@ function openSupportForm(){
   window.open(SUP_URL,'_blank');
 }
 // ── Contenido de las políticas ─────────────────────────────────
-var PRIVACY_CONTENT = '<div class="policy-section"><div class="policy-section-title">🌟 Información general</div><p><span class="policy-hl">Jardín de Estrellas</span> es un juego móvil desarrollado de forma independiente en Paraguay. Esta política explica qué información recopilamos y cómo la usamos.</p></div><div class="policy-section"><div class="policy-section-title">📊 Datos que recopilamos</div><p>La aplicación <span class="policy-hl">no recopila datos personales</span> como nombre, correo electrónico, número de teléfono o ubicación.</p><p>Los únicos datos almacenados son:</p><ul><li>Puntajes y récords del juego (solo en tu dispositivo)</li><li>Preferencias de configuración del juego</li><li>Conteo de sesiones (solo en tu dispositivo)</li></ul><p>Todos estos datos permanecen <span class="policy-hl">únicamente en tu dispositivo</span> y no se envían a ningún servidor.</p></div><div class="policy-section"><div class="policy-section-title">📺 Publicidad (AdMob)</div><p>La aplicación utiliza <span class="policy-hl">Google AdMob</span> para mostrar anuncios. AdMob puede recopilar cierta información del dispositivo para personalizar los anuncios, de acuerdo con su propia política de privacidad.</p><p>Esto puede incluir:</p><ul><li>Identificadores de publicidad del dispositivo</li><li>Información sobre el sistema operativo</li><li>Datos de uso para personalización de anuncios</li></ul></div><div class="policy-section"><div class="policy-section-title">🌐 Conexión a internet</div><p>La aplicación requiere internet para cargar el juego desde GitHub Pages y mostrar anuncios. No se transmite información personal durante estas conexiones.</p></div><div class="policy-section"><div class="policy-section-title">👶 Menores de edad</div><p>Jardín de Estrellas es apto para todas las edades, desde 7 años. No recopilamos información de menores de edad intencionalmente.</p></div><div class="policy-section"><div class="policy-section-title">✏️ Cambios a esta política</div><p>Podemos actualizar esta política ocasionalmente. Los cambios se publicarán en la aplicación.</p></div><div class="policy-section"><div class="policy-section-title">📬 Contacto</div><p>Para preguntas sobre esta política, contactanos a través del formulario de soporte en la sección Info.</p></div><div class="policy-updated">© 2025 Jardín de Estrellas · Todos los derechos reservados</div>';
+var PRIVACY_CONTENT = '<div class="policy-section"><div class="policy-section-title">🌟 Información general</div><p><span class="policy-hl">Jardín de Estrellas</span> es un juego móvil desarrollado de forma independiente en Paraguay. Esta política explica qué información recopilamos y cómo la usamos.</p></div><div class="policy-section"><div class="policy-section-title">📊 Datos que recopilamos</div><p>La aplicación <span class="policy-hl">no recopila datos personales</span> como nombre, correo electrónico, número de teléfono o ubicación.</p><p>Los únicos datos almacenados son:</p><ul><li>Puntajes y récords del juego (solo en tu dispositivo)</li><li>Preferencias de configuración del juego</li><li>Conteo de sesiones (solo en tu dispositivo)</li></ul><p>Todos estos datos permanecen <span class="policy-hl">únicamente en tu dispositivo</span> y no se envían a ningún servidor.</p></div><div class="policy-section"><div class="policy-section-title">📺 Publicidad (AdMob)</div><p>La aplicación utiliza <span class="policy-hl">Google AdMob</span> para mostrar anuncios. AdMob puede recopilar cierta información del dispositivo para personalizar los anuncios, de acuerdo con su propia política de privacidad.</p><p>Esto puede incluir:</p><ul><li>Identificadores de publicidad del dispositivo</li><li>Información sobre el sistema operativo</li><li>Datos de uso para personalización de anuncios</li></ul></div><div class="policy-section"><div class="policy-section-title">🌐 Conexión a internet</div><p>La aplicación requiere internet para cargar el juego. No se transmite información personal durante estas conexiones.</p></div><div class="policy-section"><div class="policy-section-title">👶 Menores de edad</div><p>Jardín de Estrellas es apto para todas las edades, desde 7 años. No recopilamos información de menores de edad intencionalmente.</p></div><div class="policy-section"><div class="policy-section-title">✏️ Cambios a esta política</div><p>Podemos actualizar esta política ocasionalmente. Los cambios se publicarán en la aplicación.</p></div><div class="policy-section"><div class="policy-section-title">📬 Contacto</div><p>Para preguntas sobre esta política, contactanos a través del formulario de soporte en la sección Info.</p></div><div class="policy-updated">© 2025 Jardín de Estrellas · Todos los derechos reservados</div>';
 
 var TERMS_CONTENT = '<div class="policy-section"><div class="policy-section-title">✅ Aceptación</div><p>Al instalar o usar <span class="policy-hl">Jardín de Estrellas</span>, aceptás estos términos de uso. Si no estás de acuerdo, te pedimos que no uses la aplicación.</p></div><div class="policy-section"><div class="policy-section-title">🎮 Uso permitido</div><p>Podés usar la aplicación para:</p><ul><li>Jugar de forma personal y no comercial</li><li>Disfrutar del contenido en tu dispositivo Android</li></ul><p>Queda prohibido:</p><ul><li>Modificar o distribuir el código sin autorización</li><li>Usar la app con fines comerciales sin permiso</li><li>Eludir los sistemas de publicidad o seguridad</li><li>Usar herramientas para hacer trampa en el juego</li></ul></div><div class="policy-section"><div class="policy-section-title">📺 Publicidad</div><p>La aplicación muestra anuncios a través de <span class="policy-hl">Google AdMob</span> para financiar el desarrollo y mantenerla gratuita. Los anuncios de video son opcionales y se ofrecen como recompensa para obtener vidas adicionales.</p></div><div class="policy-section"><div class="policy-section-title">🔄 Actualizaciones</div><p>Podemos actualizar la aplicación para mejorarla, corregir errores o agregar funciones. Recomendamos mantenerla actualizada para la mejor experiencia.</p></div><div class="policy-section"><div class="policy-section-title">⚠️ Limitación de responsabilidad</div><p>La aplicación se proporciona <span class="policy-hl">"tal como está"</span>. No nos hacemos responsables de interrupciones del servicio, pérdida de datos del dispositivo ni daños indirectos.</p></div><div class="policy-section"><div class="policy-section-title">🧒 Menores de edad</div><p>La aplicación es apta para todas las edades. Los menores deben contar con el consentimiento de sus padres o tutores.</p></div><div class="policy-section"><div class="policy-section-title">📋 Propiedad intelectual</div><p>Todos los elementos del juego (diseño, código, nombre) son propiedad de sus autores. El uso de la aplicación no otorga ningún derecho de propiedad.</p></div><div class="policy-section"><div class="policy-section-title">📬 Contacto</div><p>Para consultas sobre estos términos, contactanos a través del formulario de soporte en la sección Info.</p></div><div class="policy-updated">© 2025 Jardín de Estrellas · Todos los derechos reservados</div>';
 
