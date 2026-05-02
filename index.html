@@ -700,6 +700,16 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:none}
       <input class="fi" id="adm-app" type="text" placeholder="App ID  (ca-app-pub-XXXXX~XXXXX)" style="opacity:.5;font-size:.75rem">
 
       <div class="adv"></div>
+      <div class="flbl" style="padding-top:0">🎯 Frecuencia del Interstitial</div>
+      <div style="display:flex;align-items:center;gap:10px;margin:0 20px 12px">
+        <div style="color:rgba(255,255,255,.5);font-size:.78rem;flex:1">Sale cada</div>
+        <input class="fi" id="adm-inter-freq" type="number" min="1" max="20"
+          style="width:70px;text-align:center;margin:0;padding:10px 8px"
+          placeholder="2">
+        <div style="color:rgba(255,255,255,.5);font-size:.78rem">partidas</div>
+      </div>
+
+      <div class="adv"></div>
       <div class="flbl" style="padding-top:0">🔥 Firebase</div>
       <div style="margin:0 20px 12px;padding:11px 14px;background:rgba(255,152,0,.07);border:1px solid rgba(255,152,0,.2);border-radius:12px;color:rgba(255,255,255,.4);font-size:.72rem;line-height:1.6">
         Sincronización automática entre app y web vía Firebase Firestore
@@ -771,6 +781,7 @@ var AD_IDS={
 };
 var ADMIN_PASS  = 'jardin2025';
 var AD_ENABLED  = {banner:true, interstitial:true, rewarded:true};
+var INTER_FREQ  = 2; // Cada cuántas partidas sale el interstitial
 var _cfgLoaded  = false;
 
 // ── Cargar config desde Firestore (al iniciar) ────────────────
@@ -819,6 +830,7 @@ function _applyCfg(cfg){
     if(typeof cfg.adEnabled.interstitial!=='undefined') AD_ENABLED.interstitial=cfg.adEnabled.interstitial;
     if(typeof cfg.adEnabled.rewarded!=='undefined')     AD_ENABLED.rewarded    =cfg.adEnabled.rewarded;
   }
+  if(cfg.interFreq && cfg.interFreq>=1) INTER_FREQ=parseInt(cfg.interFreq);
   var rBtn=document.getElementById('rewardAdBtn');
   if(rBtn) rBtn.style.display='none';
 }
@@ -838,6 +850,7 @@ function saveLocalConfig(){
       interstitial: AD_ENABLED.interstitial,
       rewarded:     AD_ENABLED.rewarded
     },
+    interFreq: INTER_FREQ,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   };
   // Guardar localmente siempre
@@ -854,7 +867,7 @@ function notifyAndroidAdIds(){
       var b = AD_ENABLED.banner      ? AD_IDS.banner      : '';
       var i = AD_ENABLED.interstitial? AD_IDS.interstitial : '';
       var r = AD_ENABLED.rewarded    ? AD_IDS.rewarded     : '';
-      Android.initAds(AD_IDS.app, b, i, r);
+      Android.initAds(AD_IDS.app, b, i, r, INTER_FREQ);
     }catch(e){}
   }
 }
@@ -1182,6 +1195,7 @@ function oAdm(){
   document.getElementById('adm-inter').value  = AD_IDS.interstitial||'';
   document.getElementById('adm-reward').value = AD_IDS.rewarded||'';
   document.getElementById('adm-pass').value   = '';
+  document.getElementById('adm-inter-freq').value = INTER_FREQ||2;
   // Mostrar estado de Firebase
   document.getElementById('admStatus').textContent =
     _cfgLoaded ? '🔥 Firebase conectado · Config al día' : '🔥 Conectando a Firebase...';
@@ -1295,6 +1309,9 @@ function saveAdmConfig(){
   var newApiKey= document.getElementById('adm-api-key').value.trim();
 
   // Solo actualizar si el admin pega nuevas claves manualmente
+
+  var newFreq = parseInt(document.getElementById('adm-inter-freq').value)||2;
+  if(newFreq>=1 && newFreq<=20) INTER_FREQ=newFreq;
 
   // Actualizar contraseña
   if(newPass && newPass.length>=4) ADMIN_PASS=newPass;
